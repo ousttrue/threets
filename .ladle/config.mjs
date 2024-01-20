@@ -2,6 +2,6 @@
 export default {
   base: "/threets/",
   stories: "src/**/*.stories.{js,jsx,ts,tsx,mdx}",
-  defaultStory: "init-react-gh-pages--readme",
+  defaultStory: "docs--index",
   // storyOrder: ["init-react-gh-pages--readme", "hello--World", "*"],
 };
