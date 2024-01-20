@@ -1,0 +1,51 @@
+import { Meta } from "@ladle/react";
+
+# Ladle で three.js を練習する
+
+## 初期化
+
+```sh
+npm init -y
+npm install -D @ladle/react
+npx ladle serve
+╭────────────────────────────────────────────────────╮
+│                                                    │
+│   🥄 Ladle.dev served at http://localhost:61000/   │
+│                                                    │
+╰────────────────────────────────────────────────────╯
+```
+
+速い。`npm create @vite/latest` よりも手軽な気がする。
+
+## tsx
+
+https://ladle.dev/docs/setup
+
+`/src/hello.stories.tsx`
+
+```tsx
+export const World = () => <p>Hey!</p>;
+```
+
+## mdx
+
+`/src/init.stories.mdx`
+
+mdx も追加インストールや設定せずに動きます。
+
+https://ladle.dev/docs/mdx
+
+## .ladle/config.mjs
+
+https://ladle.dev/docs/config
+
+```js
+/** @type {import('@ladle/react').UserConfig} */
+export default {
+  base: "/threets/",
+  stories: "src/**/*.stories.{js,jsx,ts,tsx,mdx}",
+  defaultStory: "index--readme",
+  storyOrder: ["index--readme", "hello--World"],
+};
+```
+
