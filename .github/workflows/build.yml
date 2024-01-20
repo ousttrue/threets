@@ -5,7 +5,7 @@ name: ladle
 on:
   push:
     branches:
-      - svelte
+      - master
   workflow_dispatch:
 
 # GITHUB_TOKEN のパーミッションを設定し、GitHub Pages へのデプロイを許可します
