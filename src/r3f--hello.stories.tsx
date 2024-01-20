@@ -1,3 +1,8 @@
+// import type { StoryDefault } from "@ladle/react";
+// export default {
+//   title: "r3f/hello",
+// } satisfies StoryDefault;
+
 import React, { useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 
