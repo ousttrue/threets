@@ -4,11 +4,26 @@ import { Meta } from "@ladle/react";
 
 # three.js をはじめる
 
+## minimum
+
+```tsx
+import React from "react";
+import { Canvas } from "@react-three/fiber";
+
+export const Empty = () => (
+  <Canvas>
+  </Canvas>
+);
+```
+
+`<Canbas>` の中が r3f の世界になる。
+
+## cube 配置
+
+
 ## 基本型
 
 react-three-fiber 固有の作法に慣れないとにっちもさっちも行かない…
-
-TODO:
 
 root に canvas 。scene component を作り 中で useFrame などする。
 
