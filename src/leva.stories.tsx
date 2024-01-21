@@ -3,7 +3,7 @@ import { Canvas } from "@react-three/fiber";
 import { Box, OrbitControls } from "@react-three/drei";
 import { xyz, xyzScaleColorWire } from "./libs/ui";
 
-export function PositionXYZ() {
+export function PositionXYZStory() {
   const { positionX, positionY, positionZ } = xyz();
   return (
     <>
@@ -14,7 +14,7 @@ export function PositionXYZ() {
   );
 }
 
-export function PositionXYZScaleCamera() {
+export function PositionXYZScaleCameraStory() {
   const { scale, positionX, positionY, positionZ, color, wireframe } =
     xyzScaleColorWire();
   return (

@@ -21,6 +21,7 @@
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.33.2",
     "leva": "^0.9.35",
+    "react-dropzone": "^14.2.3",
     "three": "^0.160.0"
   }
 }

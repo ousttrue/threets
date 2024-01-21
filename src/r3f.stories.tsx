@@ -4,7 +4,7 @@ import { Canvas } from "@react-three/fiber";
 import { CameraWorld, FaceWorld } from "./libs/world";
 import { Box, Grid, OrbitControls, TransformControls } from "@react-three/drei";
 
-export const SceneBox = () => (
+export const BoxStory = () => (
   <Canvas>
     <mesh>
       <boxGeometry />
@@ -12,25 +12,25 @@ export const SceneBox = () => (
   </Canvas>
 );
 
-export const SceneDreiBox = () => (
+export const DreiBoxStory = () => (
   <Canvas>
     <Box />
   </Canvas>
 );
 
-export const SceneCamera = () => (
+export const CameraStory = () => (
   <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
     <CameraWorld />
   </Canvas>
 );
 
-export const SceneFace = () => (
+export const FaceStory = () => (
   <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
     <FaceWorld />
   </Canvas>
 );
 
-export const SceneGridCameraLight: Story = () => (
+export const GridCameraLightStory: Story = () => (
   <Canvas shadows>
     <ambientLight intensity={0.8} />
     <pointLight intensity={1} position={[0, 6, 0]} />
@@ -42,7 +42,7 @@ export const SceneGridCameraLight: Story = () => (
     <directionalLight position={[10, 10, 5]} />
   </Canvas>
 );
-SceneGridCameraLight.argTypes = {
+GridCameraLightStory.argTypes = {
   background: {
     name: "Canvas background",
     control: { type: "background" },
@@ -51,7 +51,7 @@ SceneGridCameraLight.argTypes = {
   },
 };
 
-export const SceneTransformControls = () => {
+export const TransformControlsStory = () => {
   const ref = React.useRef<TransformControls>(null);
   React.useEffect(() => {
     const cb = (e: KeyboardEvent) => e.key === "Escape" && ref.current.reset();
