@@ -1,10 +1,9 @@
 import React from "react";
 import { Canvas } from "@react-three/fiber";
-import { HelloWorld, CameraWorld } from "./libs/world";
+import { CameraWorld } from "./libs/world";
+import { Box } from "@react-three/drei";
 
-export const Empty = () => <Canvas></Canvas>;
-
-export const Box = () => (
+export const SceneBox = () => (
   <Canvas>
     <mesh>
       <boxGeometry />
@@ -12,7 +11,13 @@ export const Box = () => (
   </Canvas>
 );
 
-export const Camera = () => (
+export const SceneDreiBox = () => (
+  <Canvas>
+    <Box />
+  </Canvas>
+);
+
+export const SceneCamera = () => (
   <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
     <CameraWorld />
   </Canvas>

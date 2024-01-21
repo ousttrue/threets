@@ -6,9 +6,6 @@ export default {
   storyOrder: [
     "docs--index", 
     "r3f--index", 
-    "r3f--Empty", 
-    "r3f--Box", 
-    "r3f--Camera", 
     "*",
   ],
 };

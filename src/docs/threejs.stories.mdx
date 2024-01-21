@@ -10,22 +10,6 @@ import { Meta } from "@ladle/react";
 
 https://docs.pmnd.rs/react-three-fiber/getting-started/introduction
 
-## empty
-
-```tsx
-import React from "react";
-import { Canvas } from "@react-three/fiber";
-
-export const Empty = () => (
-  <Canvas>
-  </Canvas>
-);
-```
-
-`<Canbas>` の中が r3f の世界になる。
-
-[empty](?story=r3f--empty)
-
 ## box
 
 ```tsx
@@ -38,12 +22,26 @@ export const Box = () => (
 );
 ```
 
+`<Canvas>` の中が r3f の世界になる。
+
 Canvas の子孫の小文字タグは、 
 three.js の Object を示す規約のようだ。
 
 https://threejs.org/docs/index.html?q=box#api/en/geometries/BoxGeometry
 
 [box](?story=r3f--box)
+
+### drei Box
+
+```tsx
+import { Box } from "@react-three/drei";
+
+export const Box = () => (
+  <Canvas>
+    <Box />
+  </Canvas>
+);
+```
 
 ## camera
 
@@ -64,4 +62,25 @@ export const Camera = () => (
 `Canvas` にはデフォルトの PersePective カメラが仕込まれている。
 
 `CameraControls` にはデフォルトのマウスイベント操作(OrbitControls?が含まれている)
+
+## leva
+
+### trouble
+
+```
+Uncaught TypeError: Cannot read properties of undefined (reading 'cssRules')
+```
+
+```sh
+rm -rf node_moduels/.vite
+```
+
+で治る時もある。
+react の mount / unmount のトラブルとかそういうの？
+
+### sample
+
+r3f と併用する gui
+
+[【React Three Fiber】Reactで作る３D【#４leva useControls】](https://zenn.dev/web_life_ch/articles/4bf90c3388e176)
 
