@@ -1,10 +1,14 @@
 import React from "react";
 import { Canvas } from "@react-three/fiber";
-import { HelloWorld, CameraWorld } from "./world";
+import { HelloWorld, CameraWorld } from "./libs/world";
 
-export const Hello = () => (
+export const Empty = () => <Canvas></Canvas>;
+
+export const Box = () => (
   <Canvas>
-    <HelloWorld />
+    <mesh>
+      <boxGeometry />
+    </mesh>
   </Canvas>
 );
 

@@ -3,5 +3,12 @@ export default {
   base: "/threets/",
   stories: "src/**/*.stories.{js,jsx,ts,tsx,mdx}",
   defaultStory: "docs--index",
-  // storyOrder: ["init-react-gh-pages--readme", "hello--World", "*"],
+  storyOrder: [
+    "docs--index", 
+    "r3f--index", 
+    "r3f--Empty", 
+    "r3f--Box", 
+    "r3f--Camera", 
+    "*",
+  ],
 };

@@ -21,12 +21,11 @@ export function HelloWorld() {
 }
 
 export function CameraWorld() {
-  const cameraControlsRef = useRef<CameraControls>(null);
   return (
     <>
       <group position-y={-0.5}>
         <Ground />
-        <CameraControls ref={cameraControlsRef} />
+        <CameraControls />
       </group>
     </>
   );

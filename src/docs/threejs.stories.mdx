@@ -1,0 +1,67 @@
+import { Meta } from "@ladle/react";
+
+<Meta title="r3f/index" />
+
+# three.js をはじめる
+
+## React-three-fiber 
+
+`three.js` と言っても react-three-fiber の方。
+
+https://docs.pmnd.rs/react-three-fiber/getting-started/introduction
+
+## empty
+
+```tsx
+import React from "react";
+import { Canvas } from "@react-three/fiber";
+
+export const Empty = () => (
+  <Canvas>
+  </Canvas>
+);
+```
+
+`<Canbas>` の中が r3f の世界になる。
+
+[empty](?story=r3f--empty)
+
+## box
+
+```tsx
+export const Box = () => (
+  <Canvas>
+    <mesh>
+      <boxGeometry />
+    </mesh>
+  </Canvas>
+);
+```
+
+Canvas の子孫の小文字タグは、 
+three.js の Object を示す規約のようだ。
+
+https://threejs.org/docs/index.html?q=box#api/en/geometries/BoxGeometry
+
+[box](?story=r3f--box)
+
+## camera
+
+`drei` の CameraControls
+
+```tsx
+import { CameraControls } from "@react-three/drei";
+
+export const Camera = () => (
+  <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
+    <CameraControls />
+  </Canvas>
+)
+```
+
+[camera](?story=r3f--camera)
+
+`Canvas` にはデフォルトの PersePective カメラが仕込まれている。
+
+`CameraControls` にはデフォルトのマウスイベント操作(OrbitControls?が含まれている)
+
