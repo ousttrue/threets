@@ -5,6 +5,7 @@ export default {
   defaultStory: "docs--index",
   storyOrder: [
     "docs--index", 
+    "docs--init", 
     "r3f--index", 
     "*",
   ],
