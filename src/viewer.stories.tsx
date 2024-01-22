@@ -18,7 +18,13 @@ import { useDropzone } from "react-dropzone";
 import { GLTFLoader, GLTF } from "three/examples/jsm/loaders/GLTFLoader";
 import { VRMLoaderPlugin } from "@pixiv/three-vrm";
 
-function GltfCanvas({ gltf }) {
+import { atom, useAtom } from "jotai";
+
+const gltfAtom = atom<GLTF | null>(null);
+
+function GltfCanvas() {
+  const [gltf] = useAtom(gltfAtom);
+
   return (
     <Canvas>
       <color attach="background" args={[0, 0, 0]} />
@@ -53,7 +59,8 @@ const TreeStory = () => (
 );
 
 export const ViewerStory = () => {
-  const [gltf, setGltf] = React.useState<GLTF>();
+  // const [gltf, setGltf] = React.useState<GLTF>();
+  const [_, setGltf] = useAtom(gltfAtom);
 
   const onDrop = React.useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -90,7 +97,7 @@ export const ViewerStory = () => {
               tabs: [
                 {
                   id: "tree",
-                  title: "tree",
+                  title: "drop",
                   content: (
                     <div {...getRootProps()}>
                       <input {...getInputProps()} />
@@ -110,7 +117,7 @@ export const ViewerStory = () => {
               id: "scene",
               title: "scene",
               // not propagate ?
-              content: <GltfCanvas gltf={gltf} />,
+              content: <GltfCanvas />,
             },
           ],
         },

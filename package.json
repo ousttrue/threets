@@ -21,6 +21,7 @@
     "@typescript-eslint/parser": "^6.19.0",
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.33.2",
+    "jotai": "^2.6.2",
     "leva": "^0.9.35",
     "rc-dock": "^3.2.18",
     "react-complex-tree": "^2.3.4",
