@@ -29,7 +29,22 @@ PS> $env:DEBUG=""
 調子がよくなった？Windows固有の問題か。
 
 ローカルで動いても gh-pages にデプロイすると cssRules 出てしまう。
-leva 以外も試す。
+
+ladle の story の root が `Canvas` なのがよくないかも。
+
+```tsx
+<Canvas>
+</Canvas>
+```
+
+👇
+
+```tsx
+<div>
+  <Canvas>
+  </Canvas>
+</div>
+```
 
 ### sample
 
