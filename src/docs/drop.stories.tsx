@@ -4,7 +4,7 @@ import { useDropzone } from "react-dropzone";
 import { GLTFLoader, GLTF } from "three/examples/jsm/loaders/GLTFLoader";
 import { VRMLoaderPlugin } from "@pixiv/three-vrm";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Box } from "@react-three/drei";
+import { OrbitControls, Box, Grid } from "@react-three/drei";
 
 const style = {
   width: 200,
@@ -59,8 +59,13 @@ export function DropZoneStroy() {
         )}
       </div>
       <Canvas>
-        {gltf ? <primitive object={gltf.scene} /> : <Box />}
-        <OrbitControls />
+        <color attach="background" args={[0, 0, 0]} />
+        <ambientLight intensity={0.8} />
+        <pointLight intensity={1} position={[0, 6, 0]} />
+        <directionalLight position={[10, 10, 5]} />
+        <OrbitControls makeDefault />
+        <Grid cellColor="white" args={[10, 10]} />
+        {gltf ? <primitive object={gltf.scene} /> : null}
       </Canvas>
     </div>
   );

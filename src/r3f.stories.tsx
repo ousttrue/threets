@@ -32,24 +32,17 @@ export const FaceStory = () => (
 
 export const GridCameraLightStory: Story = () => (
   <Canvas shadows>
+    <color attach="background" args={[0, 0, 0]} />
     <ambientLight intensity={0.8} />
     <pointLight intensity={1} position={[0, 6, 0]} />
+    <directionalLight position={[10, 10, 5]} />
     <OrbitControls makeDefault />
     <Grid cellColor="white" args={[10, 10]} />
     <Box position={[0, 0.5, 0]}>
       <meshStandardMaterial />
     </Box>
-    <directionalLight position={[10, 10, 5]} />
   </Canvas>
 );
-GridCameraLightStory.argTypes = {
-  background: {
-    name: "Canvas background",
-    control: { type: "background" },
-    options: ["black", "yellow", "pink"],
-    defaultValue: "black",
-  },
-};
 
 export const TransformControlsStory = () => {
   const ref = React.useRef<TransformControls>(null);
