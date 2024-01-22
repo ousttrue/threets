@@ -1,10 +1,6 @@
 import React from "react";
 import DockLayout, { type LayoutData } from "rc-dock";
 import "rc-dock/dist/rc-dock.css";
-// import * as React from 'react';
-// import * as ReactDOM from 'react-dom';
-// import {jsxTab, htmlTab} from './prism-tabs';
-// import {DockLayout, DockContextType} from '../lib';
 
 const defaultLayout: LayoutData = {
   dockbox: {
