@@ -4,11 +4,14 @@ import DockLayout, { type LayoutData } from "rc-dock";
 import "rc-dock/dist/rc-dock.css";
 
 import "react-complex-tree/lib/style-modern.css";
-import { shortTree } from "./demodata";
 import {
   UncontrolledTreeEnvironment,
   StaticTreeDataProvider,
+  TreeDataProvider,
   Tree,
+  Disposable,
+  TreeItem,
+  TreeItemIndex,
 } from "react-complex-tree";
 
 import { Canvas } from "@react-three/fiber";
@@ -17,6 +20,7 @@ import { Box, OrbitControls, Grid } from "@react-three/drei";
 import { useDropzone } from "react-dropzone";
 import { GLTFLoader, GLTF } from "three/examples/jsm/loaders/GLTFLoader";
 import { VRMLoaderPlugin } from "@pixiv/three-vrm";
+import * as THREE from "three";
 
 import { atom, useAtom } from "jotai";
 
@@ -38,25 +42,86 @@ function GltfCanvas() {
   );
 }
 
-const TreeStory = () => (
-  <UncontrolledTreeEnvironment<string>
-    canDragAndDrop
-    canDropOnFolder
-    canReorderItems
-    dataProvider={
-      new StaticTreeDataProvider(shortTree.items, (item, data) => ({
-        ...item,
-        data,
-      }))
+class Object3DProvider implements TreeDataProvider {
+  map: Map<TreeItemIndex, TreeItem<THREE.Object3D>> = new Map();
+  constructor(public readonly root?: THREE.Object3D) {
+    const traverse = (o: THREE.Object3D) => {
+      if (!o.name) {
+        o.name = `node:${this.map.size}`;
+      }
+      const item = {
+        index: o.id,
+        data: o,
+        children: o.children.map((child) => child.id),
+        isFolder: o.children.length > 0,
+      } satisfies TreeItem<THREE.Object3D>;
+      this.map.set(o.id, item);
+      // console.log("add", o);
+      for (const child of o.children) {
+        traverse(child);
+      }
+    };
+    if (root) {
+      traverse(root);
     }
-    getItemTitle={(item) => item.data}
-    viewState={{
-      "tree-1": {},
-    }}
-  >
-    <Tree treeId="tree-1" rootItem="root" treeLabel="Tree Example" />
-  </UncontrolledTreeEnvironment>
-);
+  }
+
+  async getTreeItem(itemId: TreeItemIndex) {
+    console.log("getTreeItem", itemId);
+
+    if (itemId == "empty") {
+      // @ts-ignore
+      return {
+        index: "empty",
+        data: { name: "empty" },
+      };
+    }
+
+    console.log("getTreeItem", itemId);
+    if (itemId == "root") {
+      return {
+        index: "root",
+        data: { name: "root" },
+        children: [this.root.id],
+      };
+    }
+
+    const item = this.map.get(itemId)!;
+    return item;
+  }
+}
+
+function SceneTree() {
+  const [gltf] = useAtom(gltfAtom);
+
+  const [provider, setProvider] = React.useState<Object3DProvider | null>(null);
+
+  if (!provider || provider.root != gltf?.scene) {
+    setProvider(new Object3DProvider(gltf?.scene));
+  }
+
+  return (
+    <UncontrolledTreeEnvironment<THREE.Object3D>
+      canDragAndDrop
+      canDropOnFolder
+      canReorderItems
+      dataProvider={provider ?? new StaticTreeDataProvider([])}
+      getItemTitle={(item) => {
+        console.log("getItemTitle", item);
+        return item.data.name;
+      }}
+      viewState={{
+        "tree-1": {},
+      }}
+    >
+      <Tree
+        treeId="tree-1"
+        rootItem={gltf ? "root" : "empty"}
+        treeLabel="Three.js scene"
+      />
+    </UncontrolledTreeEnvironment>
+  );
+}
 
 export const ViewerStory = () => {
   // const [gltf, setGltf] = React.useState<GLTF>();
@@ -91,7 +156,7 @@ export const ViewerStory = () => {
           mode: "vertical",
           children: [
             {
-              tabs: [{ id: "tree", title: "tree", content: <TreeStory /> }],
+              tabs: [{ id: "tree", title: "tree", content: <SceneTree /> }],
             },
             {
               tabs: [
