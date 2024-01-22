@@ -12,13 +12,25 @@ import {
 } from "react-complex-tree";
 
 import { Canvas } from "@react-three/fiber";
-import { Box } from "@react-three/drei";
+import { Box, OrbitControls, Grid } from "@react-three/drei";
 
-const DreiBoxStory = () => (
-  <Canvas>
-    <Box />
-  </Canvas>
-);
+import { useDropzone } from "react-dropzone";
+import { GLTFLoader, GLTF } from "three/examples/jsm/loaders/GLTFLoader";
+import { VRMLoaderPlugin } from "@pixiv/three-vrm";
+
+function GltfCanvas({ gltf }) {
+  return (
+    <Canvas>
+      <color attach="background" args={[0, 0, 0]} />
+      <ambientLight intensity={0.8} />
+      <pointLight intensity={1} position={[0, 6, 0]} />
+      <directionalLight position={[10, 10, 5]} />
+      <OrbitControls makeDefault />
+      <Grid cellColor="white" args={[10, 10]} />
+      {gltf ? <primitive object={gltf.scene} /> : null}
+    </Canvas>
+  );
+}
 
 const TreeStory = () => (
   <UncontrolledTreeEnvironment<string>
@@ -40,26 +52,79 @@ const TreeStory = () => (
   </UncontrolledTreeEnvironment>
 );
 
-const defaultLayout: LayoutData = {
-  dockbox: {
-    mode: "horizontal",
-    children: [
-      {
-        tabs: [{ id: "tree", title: "tree", content: <TreeStory /> }],
-      },
-      {
-        tabs: [{ id: "scene", title: "scene", content: <DreiBoxStory /> }],
-      },
-    ],
-  },
-};
+export const ViewerStory = () => {
+  const [gltf, setGltf] = React.useState<GLTF>();
 
-export const ViewerStory = () => (
-  <DockLayout
-    defaultLayout={defaultLayout}
-    style={{
-      width: "100%",
-      height: "100%",
-    }}
-  />
-);
+  const onDrop = React.useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) {
+      return;
+    }
+    const buffer = await file.arrayBuffer();
+
+    const loader = new GLTFLoader();
+    loader.register((parser) => {
+      return new VRMLoaderPlugin(parser);
+    });
+
+    const gltf = await loader.parseAsync(buffer, file.name);
+    setGltf(gltf);
+    console.log("loaded", gltf);
+  }, []);
+  const { getRootProps, getInputProps, open } = useDropzone({
+    onDrop,
+    noClick: true,
+  });
+
+  const defaultLayout: LayoutData = {
+    dockbox: {
+      mode: "horizontal",
+      children: [
+        {
+          mode: "vertical",
+          children: [
+            {
+              tabs: [{ id: "tree", title: "tree", content: <TreeStory /> }],
+            },
+            {
+              tabs: [
+                {
+                  id: "tree",
+                  title: "tree",
+                  content: (
+                    <div {...getRootProps()}>
+                      <input {...getInputProps()} />
+                      <button type="button" onClick={open}>
+                        Open
+                      </button>
+                    </div>
+                  ),
+                },
+              ],
+            },
+          ],
+        },
+        {
+          tabs: [
+            {
+              id: "scene",
+              title: "scene",
+              // not propagate ?
+              content: <GltfCanvas gltf={gltf} />,
+            },
+          ],
+        },
+      ],
+    },
+  };
+
+  return (
+    <DockLayout
+      defaultLayout={defaultLayout}
+      style={{
+        width: "100%",
+        height: "100%",
+      }}
+    />
+  );
+};

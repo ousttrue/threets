@@ -1,4 +1,5 @@
 import React from "react";
+import "rc-dock/dist/rc-dock.css";
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { GLTFLoader, GLTF } from "three/examples/jsm/loaders/GLTFLoader";
