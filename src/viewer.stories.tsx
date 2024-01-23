@@ -1,7 +1,4 @@
 import React from "react";
-
-import { Pane } from "tweakpane";
-
 import DockLayout, { type LayoutData } from "rc-dock";
 import "rc-dock/dist/rc-dock.css";
 
@@ -17,7 +14,7 @@ import {
 } from "react-complex-tree";
 
 import { Canvas } from "@react-three/fiber";
-import { Box, OrbitControls, Grid } from "@react-three/drei";
+import { OrbitControls, Grid } from "@react-three/drei";
 
 import { useDropzone } from "react-dropzone";
 import { GLTFLoader, GLTF } from "three/examples/jsm/loaders/GLTFLoader";
@@ -25,22 +22,70 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
 import * as THREE from "three";
 
 import { atom, useAtom } from "jotai";
+import { Pane } from "tweakpane";
 
-const gltfAtom = atom<GLTF | null>(null);
+type ViewerAtom = {
+  root?: THREE.Object3D;
+  selected?: THREE.Object3D;
+  // container?: HTMLDivElement;
+};
+const viewerAtom = atom<ViewerAtom>({});
 
-function GltfCanvas() {
-  const [gltf] = useAtom(gltfAtom);
+class InspectorObj {
+  pane: Pane;
+  obj: THREE.Object3D | null = null;
+  binding: any;
+  constructor(container: HTMLDivElement) {
+    console.log("new Pane", container);
+    this.pane = new Pane({
+      title: "inspector",
+      container,
+    });
+  }
+
+  bind(obj: THREE.Object3D | null) {
+    // console.log("bind", obj);
+    this.obj = obj;
+    if (this.binding) {
+      this.pane.remove(this.binding);
+    }
+    if (obj) {
+      this.binding = this.pane.addBinding(obj, "position");
+    }
+  }
+}
+let inspector: InspectorObj | null = null;
+
+function Inspector() {
+  const ref = React.useRef(null);
+  const [container, setContainer] = React.useState(null);
+  React.useEffect(() => {
+    setContainer(ref.current);
+    inspector = new InspectorObj(ref.current!);
+  }, []);
+
+  const [viewer, _] = useAtom(viewerAtom);
+  if (container && inspector) {
+    if (inspector.obj != viewer.selected) {
+      inspector.bind(viewer.selected ?? null);
+    }
+  }
+
+  return <div ref={ref}></div>;
+}
+
+function World() {
+  const [viewer] = useAtom(viewerAtom);
 
   return (
-    <Canvas>
+    <>
       <color attach="background" args={[0, 0, 0]} />
       <ambientLight intensity={0.8} />
       <pointLight intensity={1} position={[0, 6, 0]} />
       <directionalLight position={[10, 10, 5]} />
-      <OrbitControls makeDefault />
       <Grid cellColor="white" args={[10, 10]} />
-      {gltf ? <primitive object={gltf.scene} /> : null}
-    </Canvas>
+      {viewer.root ? <primitive object={viewer.root} /> : null}
+    </>
   );
 }
 
@@ -81,6 +126,7 @@ class Object3DProvider implements TreeDataProvider {
       return {
         index: "root",
         data: { name: "root" },
+        // @ts-ignore
         children: [this.root.id],
       };
     }
@@ -91,15 +137,13 @@ class Object3DProvider implements TreeDataProvider {
 }
 
 function SceneTree() {
-  const [gltf] = useAtom(gltfAtom);
+  const [viewer, setViewer] = useAtom(viewerAtom);
 
   const [provider, setProvider] = React.useState<Object3DProvider | null>(null);
 
-  if (!provider || provider.root != gltf?.scene) {
-    setProvider(new Object3DProvider(gltf?.scene));
+  if (!provider || provider.root != viewer.root) {
+    setProvider(new Object3DProvider(viewer.root));
   }
-
-  const [selected, setSelected] = React.useState<TreeItemIndex[]>([]);
 
   return (
     <UncontrolledTreeEnvironment<THREE.Object3D>
@@ -107,6 +151,7 @@ function SceneTree() {
       canDragAndDrop
       canDropOnFolder
       canReorderItems
+      // @ts-ignore
       dataProvider={provider ?? new StaticTreeDataProvider([])}
       getItemTitle={(item) => {
         // console.log("getItemTitle", item);
@@ -116,13 +161,15 @@ function SceneTree() {
         "tree-1": {},
       }}
       onSelectItems={(items: TreeItemIndex[], treeId: string) => {
-        console.log(items);
-        setSelected(items);
+        setViewer({
+          ...viewer,
+          selected: provider?.map.get(items[0])?.data,
+        });
       }}
     >
       <Tree
         treeId="tree-1"
-        rootItem={gltf ? "root" : "empty"}
+        rootItem={viewer.root ? "root" : "empty"}
         treeLabel="Three.js scene"
       />
     </UncontrolledTreeEnvironment>
@@ -130,7 +177,7 @@ function SceneTree() {
 }
 
 function OpenButton() {
-  const [_, setGltf] = useAtom(gltfAtom);
+  const [_, setViewer] = useAtom(viewerAtom);
 
   const onDrop = React.useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -145,7 +192,7 @@ function OpenButton() {
     });
 
     const gltf = await loader.parseAsync(buffer, file.name);
-    setGltf(gltf);
+    setViewer({ root: gltf.scene });
     console.log("loaded", gltf);
   }, []);
   const { getRootProps, getInputProps, open } = useDropzone({
@@ -178,8 +225,8 @@ export const ViewerStory = () => {
               tabs: [
                 {
                   id: "tree",
-                  title: "drop",
-                  content: <div></div>,
+                  title: "inspector",
+                  content: <Inspector />,
                 },
               ],
             },
@@ -191,7 +238,19 @@ export const ViewerStory = () => {
               id: "scene",
               title: "scene",
               // not propagate ?
-              content: <GltfCanvas />,
+              content: (
+                <Canvas
+                  camera={{
+                    fov: 60,
+                    near: 0.1,
+                    far: 1000,
+                    position: [0, 1.6, 4],
+                  }}
+                >
+                  <OrbitControls makeDefault />
+                  <World />
+                </Canvas>
+              ),
             },
           ],
         },
