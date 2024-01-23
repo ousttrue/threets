@@ -34,10 +34,16 @@ export class GUIController {
     return !folder.controllers.find((c) => c._name === name);
   };
 
-  add(folderTitle: string, obj: object, name: string) {
+  add(
+    folderTitle: string,
+    obj: object,
+    name: string,
+    min: number,
+    max: number
+  ) {
     const folder = this._folder(folderTitle);
     if (this._uncontainedName(folder, name)) {
-      return folder.add(obj, name, 0, 100, 1);
+      return folder.add(obj, name, min, max, 1);
     }
   }
 }
