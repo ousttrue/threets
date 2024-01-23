@@ -1,35 +1,28 @@
 import React from "react";
 import { Pane } from "tweakpane";
-import { atom, useAtom } from "jotai";
+import * as THREE from "three";
 
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Box, OrbitControls, Grid } from "@react-three/drei";
+import { useThree, Canvas } from "@react-three/fiber";
+import { OrbitControls, Grid } from "@react-three/drei";
 
-const params = {
-  positionX: 0,
-  positionY: 0,
-  positionZ: 0,
-};
-const paramsAtom = atom(params);
 let pane: Pane | null = null;
 
 function World({ container }: { container: HTMLDivElement | null }) {
-  const [_, setParams] = useAtom(paramsAtom);
+  const { scene } = useThree();
 
-  useFrame(() => {
-    if (!pane) {
-      if (container) {
-        pane = new Pane({
-          container,
-          title: "Parameters",
-        });
-        pane.addBinding(params, "positionX");
-        pane.addBinding(params, "positionY");
-        pane.addBinding(params, "positionZ");
-      }
-    }
-    setParams({ ...params });
-  });
+  React.useEffect(() => {
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const cube = new THREE.Mesh(geometry, material);
+    scene.add(cube);
+
+    console.log(container);
+    pane = new Pane({
+      container: container!,
+      title: "Parameters",
+    });
+    pane.addBinding(cube, "position");
+  }, []);
 
   return (
     <>
@@ -39,15 +32,12 @@ function World({ container }: { container: HTMLDivElement | null }) {
       <directionalLight position={[10, 10, 5]} />
       <OrbitControls makeDefault />
       <Grid cellColor="white" args={[10, 10]} />
-
-      <Box position={[params.positionX, params.positionY, params.positionZ]} />
     </>
   );
 }
 
 export function TweakPaneStory() {
   const ref = React.useRef(null);
-  const [params, _] = useAtom(paramsAtom);
   const [container, setContainer] = React.useState<HTMLDivElement | null>(null);
   React.useEffect(() => {
     setContainer(ref.current);
@@ -57,11 +47,6 @@ export function TweakPaneStory() {
     <>
       <div style={{ display: "flex" }}>
         <div ref={ref}></div>
-        <div>
-          <div> {params.positionX} </div>
-          <div> {params.positionY} </div>
-          <div> {params.positionZ} </div>
-        </div>
       </div>
       <Canvas>
         <World container={ref.current} />

@@ -1,6 +1,6 @@
 import React from "react";
 
-import {Pane} from 'tweakpane';
+import { Pane } from "tweakpane";
 
 import DockLayout, { type LayoutData } from "rc-dock";
 import "rc-dock/dist/rc-dock.css";
@@ -129,8 +129,7 @@ function SceneTree() {
   );
 }
 
-export const ViewerStory = () => {
-  // const [gltf, setGltf] = React.useState<GLTF>();
+function OpenButton() {
   const [_, setGltf] = useAtom(gltfAtom);
 
   const onDrop = React.useCallback(async (acceptedFiles: File[]) => {
@@ -154,6 +153,17 @@ export const ViewerStory = () => {
     noClick: true,
   });
 
+  return (
+    <div {...getRootProps()}>
+      <input {...getInputProps()} />
+      <button type="button" onClick={open}>
+        Open
+      </button>
+    </div>
+  );
+}
+
+export const ViewerStory = () => {
   const defaultLayout: LayoutData = {
     dockbox: {
       mode: "horizontal",
@@ -169,14 +179,7 @@ export const ViewerStory = () => {
                 {
                   id: "tree",
                   title: "drop",
-                  content: (
-                    <div {...getRootProps()}>
-                      <input {...getInputProps()} />
-                      <button type="button" onClick={open}>
-                        Open
-                      </button>
-                    </div>
-                  ),
+                  content: <div></div>,
                 },
               ],
             },
@@ -197,12 +200,18 @@ export const ViewerStory = () => {
   };
 
   return (
-    <DockLayout
-      defaultLayout={defaultLayout}
+    <div
       style={{
         width: "100%",
         height: "100%",
+        display: "flex",
+        flexDirection: "column",
       }}
-    />
+    >
+      <nav style={{ height: "2em" }}>
+        <OpenButton />
+      </nav>
+      <DockLayout defaultLayout={defaultLayout} style={{ flexGrow: 1 }} />
+    </div>
   );
 };
