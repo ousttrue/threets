@@ -1,5 +1,7 @@
 import React from "react";
 
+import {Pane} from 'tweakpane';
+
 import DockLayout, { type LayoutData } from "rc-dock";
 import "rc-dock/dist/rc-dock.css";
 
@@ -67,8 +69,6 @@ class Object3DProvider implements TreeDataProvider {
   }
 
   async getTreeItem(itemId: TreeItemIndex) {
-    console.log("getTreeItem", itemId);
-
     if (itemId == "empty") {
       // @ts-ignore
       return {
@@ -77,7 +77,6 @@ class Object3DProvider implements TreeDataProvider {
       };
     }
 
-    console.log("getTreeItem", itemId);
     if (itemId == "root") {
       return {
         index: "root",
@@ -100,18 +99,25 @@ function SceneTree() {
     setProvider(new Object3DProvider(gltf?.scene));
   }
 
+  const [selected, setSelected] = React.useState<TreeItemIndex[]>([]);
+
   return (
     <UncontrolledTreeEnvironment<THREE.Object3D>
+      disableMultiselect
       canDragAndDrop
       canDropOnFolder
       canReorderItems
       dataProvider={provider ?? new StaticTreeDataProvider([])}
       getItemTitle={(item) => {
-        console.log("getItemTitle", item);
+        // console.log("getItemTitle", item);
         return item.data.name;
       }}
       viewState={{
         "tree-1": {},
+      }}
+      onSelectItems={(items: TreeItemIndex[], treeId: string) => {
+        console.log(items);
+        setSelected(items);
       }}
     >
       <Tree

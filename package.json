@@ -16,6 +16,7 @@
     "@pixiv/three-vrm": "^2.0.9",
     "@react-three/drei": "^9.96.1",
     "@react-three/fiber": "^8.15.14",
+    "@tweakpane/core": "^2.0.3",
     "@types/three": "^0.160.0",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0",
@@ -23,9 +24,11 @@
     "eslint-plugin-react": "^7.33.2",
     "jotai": "^2.6.2",
     "leva": "^0.9.35",
+    "lil-gui": "^0.19.1",
     "rc-dock": "^3.2.18",
     "react-complex-tree": "^2.3.4",
     "react-dropzone": "^14.2.3",
-    "three": "^0.160.0"
+    "three": "^0.160.0",
+    "tweakpane": "^4.0.3"
   }
 }
