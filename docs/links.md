@@ -1,17 +1,4 @@
-import { Meta } from "@ladle/react";
 
-<Meta title="docs/index" />
-
-# react と three.js 練習
-## github
-
-- https://github.com/ousttrue/threets
-
-## gh-pages
-
-- https://ousttrue.github.io/threets/
-
-# deps
 ## ladle
 
 - https://ladle.dev/docs/
@@ -30,7 +17,7 @@ import { Meta } from "@ladle/react";
 - https://github.com/pmndrs/drei
 - https://drei.pmnd.rs/
 
-# 参考
+## 参考
 
 - <a href="https://sbcode.net/react-three-fiber/examples/">React Three Fiber Examples - React Three Fiber Tutorials</a>
 

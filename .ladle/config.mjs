@@ -1,6 +1,6 @@
 /** @type {import('@ladle/react').UserConfig} */
 export default {
-  base: "/threets/",
+  base: "/threets/ladle/",
   stories: "src/**/*.stories.{js,jsx,ts,tsx,mdx}",
   defaultStory: "docs--index",
   storyOrder: ["docs--index", "docs--init", "r3f--index", "*"],

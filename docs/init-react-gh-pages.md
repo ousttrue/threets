@@ -1,7 +1,3 @@
-import { Meta } from "@ladle/react";
-
-<Meta title="docs/init" />
-
 # Ladle + React + gh-pages
 
 ## 初期化
@@ -103,4 +99,3 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v2
 ```
-

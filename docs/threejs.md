@@ -1,7 +1,3 @@
-import { Meta } from "@ladle/react";
-
-<Meta title="r3f/index" />
-
 # three.js をはじめる
 
 ## React-three-fiber 
