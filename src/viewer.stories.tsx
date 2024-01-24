@@ -31,8 +31,10 @@ type ViewerAtom = {
 };
 const viewerAtom = atom<ViewerAtom>({});
 
+// const VRM_URL =
+//   "https://github.com/vrm-c/vrm-specification/raw/master/samples/Seed-san/vrm/Seed-san.vrm";
 const VRM_URL =
-  "https://github.com/vrm-c/vrm-specification/raw/master/samples/Seed-san/vrm/Seed-san.vrm";
+  "https://pixiv.github.io/three-vrm/packages/three-vrm/examples/models/VRM1_Constraint_Twist_Sample.vrm";
 
 class InspectorObj {
   pane: Pane;
@@ -263,25 +265,23 @@ export const ViewerStory = () => {
 
   const [_, setViewer] = useAtom(viewerAtom);
 
-  if (import.meta.env.PROD) {
-    React.useEffect(() => {
-      (async () => {
-        const res = await fetch(VRM_URL, {
-          mode: "cors",
-        });
-        const buffer = await res.arrayBuffer();
+  React.useEffect(() => {
+    (async () => {
+      const res = await fetch(VRM_URL, {
+        mode: "cors",
+      });
+      const buffer = await res.arrayBuffer();
 
-        const loader = new GLTFLoader();
-        loader.register((parser) => {
-          return new VRMLoaderPlugin(parser);
-        });
+      const loader = new GLTFLoader();
+      loader.register((parser) => {
+        return new VRMLoaderPlugin(parser);
+      });
 
-        const gltf = await loader.parseAsync(buffer, VRM_URL);
-        setViewer({ root: gltf.scene });
-        console.log("loaded", gltf);
-      })();
-    }, []);
-  }
+      const gltf = await loader.parseAsync(buffer, VRM_URL);
+      setViewer({ root: gltf.scene });
+      console.log("loaded", gltf);
+    })();
+  }, []);
 
   return (
     <div
