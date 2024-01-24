@@ -1,3 +1,9 @@
+# r3f
+
+https://github.com/pmndrs/drei
+
+- @2022 [Three.jsとreact-three-fiberの実装を比較する #React - Qiita](https://qiita.com/itouoti/items/5cf05aa0598674d854ac)
+
 ## box
 
 ```tsx
@@ -93,3 +99,8 @@ export const GridCameraLightStory: Story = () => (
 );
 
 ```
+
+# sample
+
+- https://medium.com/cortico/3d-data-visualization-with-react-and-three-js-7272fb6de432
+

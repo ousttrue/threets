@@ -28,6 +28,12 @@ const sidebars: SidebarsConfig = {
             "libs/property/tweakpane",
           ],
         },
+        {
+          type: "category",
+          label: "r3f",
+          link: { type: "doc", id: "libs/r3f/index" },
+          items: [, "libs/r3f/drei"],
+        },
         "libs/gui",
       ],
     },
@@ -39,11 +45,29 @@ const sidebars: SidebarsConfig = {
         id: "threejs/index",
       },
       items: [
-        "threejs/r3f",
-        "threejs/drei",
         "threejs/camera",
         "threejs/scene",
+        "threejs/gizmo",
+        "threejs/animation",
       ],
+    },
+    {
+      type: "category",
+      label: "vrm",
+      link: {
+        type: "doc",
+        id: "vrm/index",
+      },
+      items: ["vrm/bone", "vrm/bvh"],
+    },
+    {
+      type: "category",
+      label: "xr",
+      link: {
+        type: "doc",
+        id: "xr/index",
+      },
+      items: [],
     },
   ],
 };
