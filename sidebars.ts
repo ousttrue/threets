@@ -13,18 +13,37 @@ import type { SidebarsConfig } from "@docusaurus/plugin-content-docs";
 const sidebars: SidebarsConfig = {
   // By default, Docusaurus generates a sidebar from the docs folder structure
   sidebar: [
-    "init-react-gh-pages",
     {
       type: "category",
-      label: "three.js",
-      link: { type: "doc", id: "threejs" },
-      items: ["bone"],
+      label: "libs",
+      link: { type: "doc", id: "libs/index" },
+      items: [
+        {
+          type: "category",
+          label: "property",
+          link: { type: "doc", id: "libs/property/index" },
+          items: [
+            "libs/property/leva",
+            "libs/property/lilgui",
+            "libs/property/tweakpane",
+          ],
+        },
+        "libs/gui",
+      ],
     },
     {
       type: "category",
-      label: "gui",
-      link: { type: "doc", id: "gui" },
-      items: [],
+      label: "three.js",
+      link: {
+        type: "doc",
+        id: "threejs/index",
+      },
+      items: [
+        "threejs/r3f",
+        "threejs/drei",
+        "threejs/camera",
+        "threejs/scene",
+      ],
     },
   ],
 };
