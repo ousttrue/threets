@@ -1,6 +1,6 @@
 import React from "react";
 import { useAtom } from "jotai";
-import { viewerAtom } from "./vieweratom";
+import { viewerAtom, fromGltf } from "./vieweratom";
 import { useDropzone } from "react-dropzone";
 import { GLTFLoader, GLTF } from "three/examples/jsm/loaders/GLTFLoader";
 import { VRMLoaderPlugin } from "@pixiv/three-vrm";
@@ -21,7 +21,7 @@ export default function OpenButton() {
     });
 
     const gltf = await loader.parseAsync(buffer, file.name);
-    setViewer({ gltf, root: gltf ? gltf.scene : null });
+    setViewer(fromGltf(gltf));
     console.log("loaded", gltf);
   }, []);
   const { getRootProps, getInputProps, open } = useDropzone({

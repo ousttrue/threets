@@ -1,7 +1,8 @@
 import React from "react";
 import { useAtom } from "jotai";
 import { viewerAtom } from "./vieweratom";
-import { GLTFLoader, GLTF } from "three/examples/jsm/loaders/GLTFLoader";
+import { VRM, VRMExpression } from "@pixiv/three-vrm";
+import { VRMExpression } from "@pixiv/three-vrm";
 import "react-complex-tree/lib/style-modern.css";
 import * as THREE from "three";
 import {
@@ -14,46 +15,52 @@ import {
   TreeItemIndex,
 } from "react-complex-tree";
 
-class MaterialProvider implements TreeDataProvider {
-  map: Map<TreeItemIndex, TreeItem<THREE.Material>> = new Map();
-  rootItem: TreeItem<THREE.Material> = {
+class ExpressionProvider implements TreeDataProvider {
+  map: Map<TreeItemIndex, TreeItem<VRMExpression>> = new Map();
+  rootItem: TreeItem = {
     index: "root",
-    data: new THREE.MeshBasicMaterial(),
+    data: {},
     children: [],
     isFolder: true,
   };
-  constructor(public readonly root?: THREE.Object3D) {
-    const traverse = (o: THREE.Object3D) => {
-      if (o instanceof THREE.Mesh) {
-        if (o.material) {
-          if (Array.isArray(o.material)) {
-            for (const material of o.material) {
-              this.pushMaterial(material);
-            }
-          } else {
-            this.pushMaterial(o.material);
-          }
-        }
+  constructor(public readonly vrm?: VRM) {
+    // console.log(vrm);
+    if (vrm && vrm.expressionManager) {
+      for (const e of vrm.expressionManager.expressions) {
+        this.push(e);
       }
-      for (const child of o.children) {
-        traverse(child);
-      }
-    };
-    if (root) {
-      traverse(root);
     }
+    // const traverse = (o: THREE.Object3D) => {
+    //   if (o instanceof THREE.Mesh) {
+    //     if (o.material) {
+    //       if (Array.isArray(o.material)) {
+    //         for (const material of o.material) {
+    //           this.pushMaterial(material);
+    //         }
+    //       } else {
+    //         this.pushMaterial(o.material);
+    //       }
+    //     }
+    //   }
+    //   for (const child of o.children) {
+    //     traverse(child);
+    //   }
+    // };
+    // if (root) {
+    //   traverse(root);
+    // }
   }
 
-  pushMaterial(material: THREE.Material) {
-    if (!material.name) {
-      material.name = `material:${this.map.size}`;
+  push(e: VRMExpression) {
+    if (!e.name) {
+      e.name = `expression:${this.map.size}`;
     }
     const item = {
-      index: material.id,
-      data: material,
-    } satisfies TreeItem<THREE.Material>;
-    this.map.set(material.id, item);
-    this.rootItem.children.push(material.id);
+      index: e.id,
+      data: e,
+    } satisfies TreeItem<VRMExpression>;
+    this.map.set(e.id, item);
+    this.rootItem.children.push(e.id);
   }
 
   async getTreeItem(itemId: TreeItemIndex) {
@@ -74,13 +81,15 @@ class MaterialProvider implements TreeDataProvider {
   }
 }
 
-export default function MaterialList() {
+export default function ExpressionList() {
   const [viewer, setViewer] = useAtom(viewerAtom);
 
-  const [provider, setProvider] = React.useState<MaterialProvider | null>(null);
+  const [provider, setProvider] = React.useState<ExpressionProvider | null>(
+    null
+  );
 
-  if (!provider || provider.root != viewer.root) {
-    setProvider(new MaterialProvider(viewer.root));
+  if (!provider || provider.vrm != viewer.vrm) {
+    setProvider(new ExpressionProvider(viewer.vrm));
   }
 
   return (
@@ -102,7 +111,7 @@ export default function MaterialList() {
         console.log("onSelectItems", treeId);
         setViewer({
           ...viewer,
-          selectedMaterial: provider?.map.get(items[0])?.data,
+          selectedExpression: provider?.map.get(items[0])?.data,
         });
       }}
     >

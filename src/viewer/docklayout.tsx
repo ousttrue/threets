@@ -8,6 +8,7 @@ import World from "./world";
 import SceneTree from "./nodehierarchy";
 import MaterialList from "./materiallist";
 import MaterialInspector from "./materialinspector";
+import ExpressionList from "./expressionlist";
 
 export default {
   dockbox: {
@@ -76,6 +77,20 @@ export default {
                 id: "maetrialInspector",
                 title: "materialInspector",
                 content: <MaterialInspector />,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        mode: "vertical",
+        children: [
+          {
+            tabs: [
+              {
+                id: "expressionList",
+                title: "expressionList",
+                content: <ExpressionList />,
               },
             ],
           },

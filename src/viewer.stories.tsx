@@ -1,13 +1,13 @@
 import React from "react";
 import { useAtom } from "jotai";
-import { viewerAtom } from "./viewer/vieweratom";
+import { viewerAtom, fromGltf } from "./viewer/vieweratom";
 
 import DockLayout, { type LayoutData } from "rc-dock";
 import "rc-dock/dist/rc-dock.css";
 
 import OpenButton from "./viewer/openbutton";
 import { GLTFLoader, GLTF } from "three/examples/jsm/loaders/GLTFLoader";
-import { VRMLoaderPlugin } from "@pixiv/three-vrm";
+import { VRMLoaderPlugin, VRM } from "@pixiv/three-vrm";
 
 // const VRM_URL =
 //   "https://github.com/vrm-c/vrm-specification/raw/master/samples/Seed-san/vrm/Seed-san.vrm";
@@ -32,7 +32,7 @@ export const ViewerStory = () => {
       });
 
       const gltf = await loader.parseAsync(buffer, VRM_URL);
-      setViewer({ gltf, root: gltf ? gltf.scene : null });
+      setViewer(fromGltf(gltf));
       console.log("loaded", gltf);
     })();
   }, []);

@@ -16,9 +16,9 @@ import {
 
 class MaterialProvider implements TreeDataProvider {
   map: Map<TreeItemIndex, TreeItem<THREE.Material>> = new Map();
-  rootItem: TreeItem<THREE.Material> = {
+  rootItem: TreeItem = {
     index: "root",
-    data: new THREE.MeshBasicMaterial(),
+    data: {},
     children: [],
     isFolder: true,
   };
