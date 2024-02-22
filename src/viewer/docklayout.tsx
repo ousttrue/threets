@@ -3,10 +3,11 @@ import { type LayoutData } from "rc-dock";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 
-import Inspector from "./nodeinspector";
+import NodeInspector from "./nodeinspector";
 import World from "./world";
 import SceneTree from "./nodehierarchy";
 import MaterialList from "./materiallist";
+import MaterialInspector from "./materialinspector";
 
 export default {
   dockbox: {
@@ -29,7 +30,7 @@ export default {
               {
                 id: "nodeInspector",
                 title: "nodeInspector",
-                content: <Inspector />,
+                content: <NodeInspector />,
               },
             ],
           },
@@ -74,7 +75,7 @@ export default {
               {
                 id: "maetrialInspector",
                 title: "materialInspector",
-                content: <Inspector />,
+                content: <MaterialInspector />,
               },
             ],
           },
