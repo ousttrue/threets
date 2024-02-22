@@ -32,7 +32,7 @@ export const ViewerStory = () => {
       });
 
       const gltf = await loader.parseAsync(buffer, VRM_URL);
-      setViewer({ root: gltf.scene });
+      setViewer({ gltf, root: gltf ? gltf.scene : null });
       console.log("loaded", gltf);
     })();
   }, []);

@@ -21,7 +21,7 @@ export default function OpenButton() {
     });
 
     const gltf = await loader.parseAsync(buffer, file.name);
-    setViewer({ root: gltf.scene });
+    setViewer({ gltf, root: gltf ? gltf.scene : null });
     console.log("loaded", gltf);
   }, []);
   const { getRootProps, getInputProps, open } = useDropzone({

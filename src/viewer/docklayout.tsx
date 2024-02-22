@@ -6,6 +6,7 @@ import { OrbitControls } from "@react-three/drei";
 import Inspector from "./nodeinspector";
 import World from "./world";
 import SceneTree from "./nodehierarchy";
+import MaterialList from "./materiallist";
 
 export default {
   dockbox: {
@@ -64,7 +65,7 @@ export default {
               {
                 id: "materialList",
                 title: "materialList",
-                content: <SceneTree />,
+                content: <MaterialList />,
               },
             ],
           },
