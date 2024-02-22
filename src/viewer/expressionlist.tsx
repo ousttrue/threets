@@ -1,6 +1,7 @@
 import React from "react";
 import { useAtom } from "jotai";
 import { viewerAtom } from "./vieweratom";
+import { GLTFLoader, GLTF } from "three/examples/jsm/loaders/GLTFLoader";
 import "react-complex-tree/lib/style-modern.css";
 import * as THREE from "three";
 import {
@@ -13,37 +14,27 @@ import {
   TreeItemIndex,
 } from "react-complex-tree";
 
-class NodeItem {
-  constructor(
-    public readonly o: THREE.Object3D,
-    public readonly index: number
-  ) {}
-
-  get name(): string {
-    let prefix = this.o.children && this.o.children.length ? "📁" : "📄";
-    if (this.o instanceof THREE.Mesh) {
-      prefix = "📦";
-    }
-    if (this.o.name) {
-      return `${prefix}${this.o.name}`;
-    } else {
-      return `${prefix}${this.index}`;
-    }
-  }
-}
-
-class Object3DProvider implements TreeDataProvider {
-  map: Map<TreeItemIndex, TreeItem<NodeItem>> = new Map();
+class MaterialProvider implements TreeDataProvider {
+  map: Map<TreeItemIndex, TreeItem<THREE.Material>> = new Map();
+  rootItem: TreeItem<THREE.Material> = {
+    index: "root",
+    data: new THREE.MeshBasicMaterial(),
+    children: [],
+    isFolder: true,
+  };
   constructor(public readonly root?: THREE.Object3D) {
     const traverse = (o: THREE.Object3D) => {
-      const item = {
-        index: o.id,
-        data: new NodeItem(o, this.map.size),
-        children: o.children.map((child) => child.id),
-        isFolder: o.children.length > 0,
-      } satisfies TreeItem<NodeItem>;
-      this.map.set(o.id, item);
-      // console.log("add", o);
+      if (o instanceof THREE.Mesh) {
+        if (o.material) {
+          if (Array.isArray(o.material)) {
+            for (const material of o.material) {
+              this.pushMaterial(material);
+            }
+          } else {
+            this.pushMaterial(o.material);
+          }
+        }
+      }
       for (const child of o.children) {
         traverse(child);
       }
@@ -51,6 +42,18 @@ class Object3DProvider implements TreeDataProvider {
     if (root) {
       traverse(root);
     }
+  }
+
+  pushMaterial(material: THREE.Material) {
+    if (!material.name) {
+      material.name = `material:${this.map.size}`;
+    }
+    const item = {
+      index: material.id,
+      data: material,
+    } satisfies TreeItem<THREE.Material>;
+    this.map.set(material.id, item);
+    this.rootItem.children.push(material.id);
   }
 
   async getTreeItem(itemId: TreeItemIndex) {
@@ -63,12 +66,7 @@ class Object3DProvider implements TreeDataProvider {
     }
 
     if (itemId == "root") {
-      return {
-        index: "root",
-        data: { name: "root" },
-        // @ts-ignore
-        children: [this.root.id],
-      };
+      return this.rootItem;
     }
 
     const item = this.map.get(itemId)!;
@@ -76,13 +74,13 @@ class Object3DProvider implements TreeDataProvider {
   }
 }
 
-export default function SceneTree() {
+export default function MaterialList() {
   const [viewer, setViewer] = useAtom(viewerAtom);
 
-  const [provider, setProvider] = React.useState<Object3DProvider | null>(null);
+  const [provider, setProvider] = React.useState<MaterialProvider | null>(null);
 
   if (!provider || provider.root != viewer.root) {
-    setProvider(new Object3DProvider(viewer.root));
+    setProvider(new MaterialProvider(viewer.root));
   }
 
   return (
@@ -104,7 +102,7 @@ export default function SceneTree() {
         console.log("onSelectItems", treeId);
         setViewer({
           ...viewer,
-          selected: provider?.map.get(items[0])?.data.o,
+          selectedMaterial: provider?.map.get(items[0])?.data,
         });
       }}
     >
