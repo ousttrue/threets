@@ -18,14 +18,14 @@ export default function GlCanvs() {
           const contentBoxSize = entry.contentBoxSize[0];
           // console.log("box", contentBoxSize);
           setSize([
-            Math.ceil(contentBoxSize.inlineSize),
-            Math.ceil(contentBoxSize.blockSize),
+            Math.floor(contentBoxSize.inlineSize),
+            Math.floor(contentBoxSize.blockSize),
           ]);
         } else {
           // console.log(entry.contentRect);
           setSize([
-            Math.ceil(entry.contentRect.width),
-            Math.ceil(entry.contentRect.height),
+            Math.floor(entry.contentRect.width),
+            Math.floor(entry.contentRect.height),
           ]);
         }
         break;

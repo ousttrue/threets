@@ -20,64 +20,14 @@ import { useDropzone } from "react-dropzone";
 import { GLTFLoader, GLTF } from "three/examples/jsm/loaders/GLTFLoader";
 import { VRMLoaderPlugin } from "@pixiv/three-vrm";
 import * as THREE from "three";
-
-import { atom, useAtom } from "jotai";
-import { Pane } from "tweakpane";
-
-type ViewerAtom = {
-  root?: THREE.Object3D;
-  selected?: THREE.Object3D;
-  // container?: HTMLDivElement;
-};
-const viewerAtom = atom<ViewerAtom>({});
+import { useAtom } from "jotai";
+import { viewerAtom } from "./viewer/vieweratom";
+import Inspector from "./viewer/nodeinspector";
 
 // const VRM_URL =
 //   "https://github.com/vrm-c/vrm-specification/raw/master/samples/Seed-san/vrm/Seed-san.vrm";
 const VRM_URL =
   "https://pixiv.github.io/three-vrm/packages/three-vrm/examples/models/VRM1_Constraint_Twist_Sample.vrm";
-
-class InspectorObj {
-  pane: Pane;
-  obj: THREE.Object3D | null = null;
-  binding: any;
-  constructor(container: HTMLDivElement) {
-    console.log("new Pane", container);
-    this.pane = new Pane({
-      title: "inspector",
-      container,
-    });
-  }
-
-  bind(obj: THREE.Object3D | null) {
-    // console.log("bind", obj);
-    this.obj = obj;
-    if (this.binding) {
-      this.pane.remove(this.binding);
-    }
-    if (obj) {
-      this.binding = this.pane.addBinding(obj, "position");
-    }
-  }
-}
-let inspector: InspectorObj | null = null;
-
-function Inspector() {
-  const ref = React.useRef(null);
-  const [container, setContainer] = React.useState(null);
-  React.useEffect(() => {
-    setContainer(ref.current);
-    inspector = new InspectorObj(ref.current!);
-  }, []);
-
-  const [viewer, _] = useAtom(viewerAtom);
-  if (container && inspector) {
-    if (inspector.obj != viewer.selected) {
-      inspector.bind(viewer.selected ?? null);
-    }
-  }
-
-  return <div ref={ref}></div>;
-}
 
 function World() {
   const [viewer] = useAtom(viewerAtom);
@@ -166,6 +116,7 @@ function SceneTree() {
         "tree-1": {},
       }}
       onSelectItems={(items: TreeItemIndex[], treeId: string) => {
+        console.log("onSelectItems", treeId);
         setViewer({
           ...viewer,
           selected: provider?.map.get(items[0])?.data,
@@ -224,13 +175,19 @@ export const ViewerStory = () => {
           mode: "vertical",
           children: [
             {
-              tabs: [{ id: "tree", title: "tree", content: <SceneTree /> }],
+              tabs: [
+                {
+                  id: "nodeHierarchy",
+                  title: "nodeHierarchy",
+                  content: <SceneTree />,
+                },
+              ],
             },
             {
               tabs: [
                 {
-                  id: "tree",
-                  title: "inspector",
+                  id: "nodeInspector",
+                  title: "nodeInspector",
                   content: <Inspector />,
                 },
               ],
@@ -256,6 +213,29 @@ export const ViewerStory = () => {
                   <World />
                 </Canvas>
               ),
+            },
+          ],
+        },
+        {
+          mode: "vertical",
+          children: [
+            {
+              tabs: [
+                {
+                  id: "materialList",
+                  title: "materialList",
+                  content: <SceneTree />,
+                },
+              ],
+            },
+            {
+              tabs: [
+                {
+                  id: "maetrialInspector",
+                  title: "materialInspector",
+                  content: <Inspector />,
+                },
+              ],
             },
           ],
         },
