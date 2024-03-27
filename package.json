@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "npx docusaurus start",
     "dev": "npx docusaurus start",
     "build": "npx docusaurus build --out-dir dist",
     "ladle:dev": "npx ladle serve",

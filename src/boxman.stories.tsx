@@ -1,0 +1,353 @@
+import React from "react";
+import { Pane } from "tweakpane";
+import * as THREE from "three";
+
+import { useThree, Canvas } from "@react-three/fiber";
+import { OrbitControls, Grid } from "@react-three/drei";
+
+let pane: Pane | null = null;
+
+class Joint {
+  constructor(public readonly position: THREE.Vector3,) {
+  }
+};
+
+interface Bone {
+  head: string;
+  tail: string;
+  widthDepth: [number, number];
+  color: number,
+};
+
+interface Fingers {
+  thumb: Bone[];
+  index: Bone[];
+  middle: Bone[];
+  ring: Bone[];
+  little: Bone[];
+};
+
+interface Skeleton {
+  joints: { [name: string]: Joint };
+  body: Bone[];
+  arms: Bone[];
+  legs: Bone[];
+  fingers: Fingers;
+};
+
+// 6 _head
+// 5
+// 4
+// 3 hips
+// 2
+// 1 
+// 0 
+class HeadUnit6 {
+  unit: number;
+  constructor(public readonly height: number) {
+    this.unit = this.height / 6.0;
+  }
+  value(unit: number) {
+    return this.unit * unit;
+  }
+};
+
+//     [+Y]up
+//       A
+//       |
+//right  |   left
+//[-X]<--o-->[+X]
+//      /
+//     L
+//   [+Z]front
+
+// 6頭身
+//
+//  +-+     _head
+//  +-+0.5: head
+//   | 
+//  +-+0.5: neck
+//  +-+2/3: chest
+//  +-+2/3: spine
+//  +-+2/3: hips
+//    |1.5: upper
+//    o
+//    |1.0: lower
+//    |0.5: foot
+//    _   : _foot
+//
+function makeSkeleton(height = 1.6): Skeleton {
+
+  const hu = new HeadUnit6(height);
+
+  const shoulderOffset = 0.5;
+  const fo = 0.02;
+  const joints: { [name: string]: Joint } = {
+    _head: new Joint(new THREE.Vector3(0, hu.value(3.0 + 3.0), 0)),
+    head: new Joint(new THREE.Vector3(0, hu.value(3.0 + 2.5), 0)),
+    neck: new Joint(new THREE.Vector3(0, hu.value(3.0 + 2.0), 0)),
+    chest: new Joint(new THREE.Vector3(0, hu.value(3.0 + 4.0 / 3.0), 0)),
+    spine: new Joint(new THREE.Vector3(0, hu.value(3.0 + 2.0 / 3.0), 0)),
+    hips: new Joint(new THREE.Vector3(0, hu.value(3.0 + 0.0), 0)),
+    //
+    upperLeg: new Joint(new THREE.Vector3(0, hu.value(3.0 + 0.0), 0)),
+    lowerLeg: new Joint(new THREE.Vector3(0, hu.value(3.0 + -1.5), 0)),
+    foot: new Joint(new THREE.Vector3(0, hu.value(3.0 + -2.5), 0)),
+    _foot: new Joint(new THREE.Vector3(0, hu.value(3.0 + -3.0), 0)),
+    //
+    upperArm: new Joint(new THREE.Vector3(hu.value(shoulderOffset + 0.0), hu.value(5.0), 0)),
+    lowerArm: new Joint(new THREE.Vector3(hu.value(shoulderOffset + 1.0), hu.value(5.0), 0)),
+    hand: new Joint(new THREE.Vector3(hu.value(shoulderOffset + 2.0), hu.value(5.0), 0)),
+    _hand: new Joint(new THREE.Vector3(hu.value(shoulderOffset + 2.3), hu.value(5.0), 0)),
+    //
+    indexProximal: new Joint(new THREE.Vector3(hu.value(0), 0, 1.5 * fo)),
+    indexIntermediate: new Joint(new THREE.Vector3(hu.value(0.2), 0, 1.5 * fo)),
+    indexDistal: new Joint(new THREE.Vector3(hu.value(0.3), 0, 1.5 * fo)),
+    _index: new Joint(new THREE.Vector3(hu.value(0.4), 0, 1.5 * fo)),
+
+    middleProximal: new Joint(new THREE.Vector3(hu.value(0), 0, 0.5 * fo)),
+    middleIntermediate: new Joint(new THREE.Vector3(hu.value(0.2), 0, 0.5 * fo)),
+    middleDistal: new Joint(new THREE.Vector3(hu.value(0.3), 0, 0.5 * fo)),
+    _middle: new Joint(new THREE.Vector3(hu.value(0.4), 0, 0.5 * fo)),
+
+    ringProximal: new Joint(new THREE.Vector3(hu.value(0), 0, -0.5 * fo)),
+    ringIntermediate: new Joint(new THREE.Vector3(hu.value(0.2), 0, -0.5 * fo)),
+    ringDistal: new Joint(new THREE.Vector3(hu.value(0.3), 0, -0.5 * fo)),
+    _ring: new Joint(new THREE.Vector3(hu.value(0.4), 0, -0.5 * fo)),
+
+    littleProximal: new Joint(new THREE.Vector3(hu.value(0), 0, -1.5 * fo)),
+    littleIntermediate: new Joint(new THREE.Vector3(hu.value(0.2), 0, -1.5 * fo)),
+    littleDistal: new Joint(new THREE.Vector3(hu.value(0.3), 0, -1.5 * fo)),
+    _little: new Joint(new THREE.Vector3(hu.value(0.4), 0, -1.5 * fo)),
+  };
+
+  const darkGreen = 0x009900;
+  const darkYellow = 0x999900;
+  const red = 0x990000;
+  const darkRed = 0x990000;
+
+  const body: Bone[] = [
+    { head: "head", tail: "_head", widthDepth: [0.2, 0.2], color: darkGreen },
+    { head: "neck", tail: "head", widthDepth: [0.1, 0.1], color: darkYellow },
+    { head: "chest", tail: "neck", widthDepth: [0.1, 0.1], color: darkGreen },
+    { head: "spine", tail: "chest", widthDepth: [0.1, 0.1], color: darkYellow },
+    { head: "hips", tail: "spine", widthDepth: [0.1, 0.1], color: darkGreen },
+  ];
+
+  const arms: Bone[] = [
+    { head: "upperArm", tail: "lowerArm", widthDepth: [0.05, 0.05], color: darkGreen },
+    { head: "lowerArm", tail: "hand", widthDepth: [0.05, 0.05], color: darkYellow },
+    { head: "hand", tail: "_hand", widthDepth: [0.05, 0.02], color: darkGreen },
+  ];
+
+  const legs: Bone[] = [
+    { head: "upperLeg", tail: "lowerLeg", widthDepth: [0.1, 0.1], color: darkGreen },
+    { head: "lowerLeg", tail: "foot", widthDepth: [0.1, 0.1], color: darkYellow },
+    { head: "foot", tail: "_foot", widthDepth: [0.1, 0.1], color: darkGreen },
+  ];
+
+  const fingers: Fingers = {
+    thumb: [],
+    index: [
+      { head: "indexProximal", tail: "indexIntermediate", widthDepth: [0.01, 0.01], color: darkRed },
+      { head: "indexIntermediate", tail: "indexDistal", widthDepth: [0.01, 0.01], color: darkYellow },
+      { head: "indexDistal", tail: "_index", widthDepth: [0.01, 0.01], color: darkRed },
+    ],
+    middle: [
+      { head: "middleProximal", tail: "middleIntermediate", widthDepth: [0.01, 0.01], color: darkRed },
+      { head: "middleIntermediate", tail: "middleDistal", widthDepth: [0.01, 0.01], color: darkYellow },
+      { head: "middleDistal", tail: "_middle", widthDepth: [0.01, 0.01], color: darkRed },
+    ],
+    ring: [
+      { head: "ringProximal", tail: "ringIntermediate", widthDepth: [0.01, 0.01], color: darkRed },
+      { head: "ringIntermediate", tail: "ringDistal", widthDepth: [0.01, 0.01], color: darkYellow },
+      { head: "ringDistal", tail: "_ring", widthDepth: [0.01, 0.01], color: darkRed },
+    ],
+    little: [
+      { head: "littleProximal", tail: "littleIntermediate", widthDepth: [0.01, 0.01], color: darkRed },
+      { head: "littleIntermediate", tail: "littleDistal", widthDepth: [0.01, 0.01], color: darkYellow },
+      { head: "littleDistal", tail: "_little", widthDepth: [0.01, 0.01], color: darkRed },
+    ],
+  };
+
+  return { joints, body, arms, legs, fingers };
+}
+
+interface MatrixMakerOption {
+  isHand?: boolean;
+  mod?: (pos: THREE.Vector3) => THREE.Vector3;
+  offset?: THREE.Vector3;
+}
+
+class MatrixMaker {
+  constructor(public readonly option: MatrixMakerOption) {
+    if (this.option.mod && this.option.offset) {
+      this.option.offset = this.option.mod(this.option.offset);
+    }
+  }
+
+  makeMatrix(head: THREE.Vector3, tail: THREE.Vector3, width: number, depth: number) {
+    const m = new THREE.Matrix4();
+
+    if (this.option.mod) {
+      head = this.option.mod(head);
+      tail = this.option.mod(tail);
+    }
+
+    const y = new THREE.Vector3();
+    y.set(tail.x, tail.y, tail.z).sub(head);
+    const height = y.length();
+    y.normalize();
+    const z = this.option.isHand ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
+    const x = new THREE.Vector3(); x.crossVectors(y, z).normalize();
+    m.makeBasis(x, y, z);
+    m.scale(new THREE.Vector3(width, height, depth));
+    const pos = new THREE.Vector3(head.x, head.y, head.z);
+    if (this.option.offset) {
+      pos.add(this.option.offset);
+    }
+    m.setPosition(pos);
+    console.log(head, tail, width, height, depth);
+    return m;
+  }
+}
+
+function makeGroup(color: number) {
+  const geometry = new THREE.BoxGeometry(1, 1, 1);
+  const material = new THREE.MeshStandardMaterial({ color });
+  const cube = new THREE.Mesh(geometry, material);
+  const group = new THREE.Group();
+  group.add(cube);
+  cube.position.set(0, 0.5, 0);
+  return group;
+}
+
+function makeFinger(addGroup, mod, joints: { [key: string]: Joint }, fingers: Fingers) {
+  for (const bone of fingers.index) {
+    const group = makeGroup(bone.color);
+    group.name = bone.head;
+    const mm = new MatrixMaker({ isHand: true, offset: joints["_hand"].position, mod });
+    group.applyMatrix4(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+    addGroup(group, bone);
+  }
+  for (const bone of fingers.middle) {
+    const group = makeGroup(bone.color);
+    group.name = bone.head;
+    const mm = new MatrixMaker({ isHand: true, offset: joints["_hand"].position, mod });
+    group.applyMatrix4(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+    addGroup(group, bone);
+  }
+  for (const bone of fingers.ring) {
+    const group = makeGroup(bone.color);
+    group.name = bone.head;
+    const mm = new MatrixMaker({ isHand: true, offset: joints["_hand"].position, mod });
+    group.applyMatrix4(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+    addGroup(group, bone);
+  }
+  for (const bone of fingers.little) {
+    const group = makeGroup(bone.color);
+    group.name = bone.head;
+    const mm = new MatrixMaker({ isHand: true, offset: joints["_hand"].position, mod });
+    group.applyMatrix4(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+    addGroup(group, bone);
+  }
+}
+
+function World({ container }: { container: HTMLDivElement | null }) {
+  const { scene } = useThree();
+
+  React.useEffect(() => {
+    console.log(container);
+    pane = new Pane({
+      container: container!,
+      title: "Parameters",
+    });
+
+    const { joints, body, legs, arms, fingers } = makeSkeleton();
+    console.log(joints);
+
+    function addGroup(group: THREE.Object3D, bone) {
+      scene.add(group);
+      // pane.addFolder({ title: bone.head });
+      // pane.addBinding(group, "position");
+    }
+
+    for (const bone of body) {
+      const group = makeGroup(bone.color);
+      group.name = bone.head;
+      const mm = new MatrixMaker({});
+      group.applyMatrix4(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+      addGroup(group, bone);
+    }
+
+    // leg
+    const legOffset = 0.1;
+    // left[+X]
+    for (const bone of legs) {
+      const group = makeGroup(bone.color);
+      group.name = bone.head;
+      const mm = new MatrixMaker({ mod: p => new THREE.Vector3(p.x + legOffset, p.y, p.z) });
+      group.applyMatrix4(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+      addGroup(group, bone);
+    }
+    // right[-X]
+    for (const bone of legs) {
+      const group = makeGroup(bone.color);
+      group.name = bone.head;
+      const mm = new MatrixMaker({ mod: p => new THREE.Vector3(p.x - legOffset, p.y, p.z) });
+      group.applyMatrix4(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+      addGroup(group, bone);
+    }
+
+    // arm
+    // left[+X]
+    for (const bone of arms) {
+      const group = makeGroup(bone.color);
+      group.name = bone.head;
+      const mm = new MatrixMaker({ isHand: true });
+      group.applyMatrix4(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+      addGroup(group, bone);
+    }
+    makeFinger(addGroup, undefined, joints, fingers);
+    // right[-X]
+    for (const bone of arms) {
+      const group = makeGroup(bone.color);
+      group.name = bone.head;
+      const mm = new MatrixMaker({ isHand: true, mod: p => new THREE.Vector3(-p.x, p.y, p.z) });
+      group.applyMatrix4(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+      addGroup(group, bone);
+    }
+    makeFinger(addGroup, p => new THREE.Vector3(-p.x, p.y, p.z), joints, fingers);
+
+  }, []);
+
+  return (
+    <>
+      <color attach="background" args={[0, 0, 0]} />
+      <ambientLight intensity={0.8} />
+      <pointLight intensity={1} position={[0, 6, 0]} />
+      <directionalLight position={[10, 10, 5]} />
+      <OrbitControls makeDefault />
+      <Grid cellColor="white" args={[10, 10]} />
+    </>
+  );
+}
+
+export function BoxMan() {
+  const ref = React.useRef(null);
+  const [container, setContainer] = React.useState<HTMLDivElement | null>(null);
+  React.useEffect(() => {
+    setContainer(ref.current);
+  }, []);
+
+  return (
+    <>
+      <div style={{ display: "flex" }}>
+        <div ref={ref}></div>
+      </div>
+      <Canvas>
+        <World container={ref.current} />
+      </Canvas>
+    </>
+  );
+}
