@@ -257,9 +257,12 @@ function makeFinger(builder: MeshBuilder, mod, joints: { [key: string]: Joint },
 
 class MeshBuilder {
   indices: number[] = [];
+  // per vertex
   positions: THREE.Vector3[] = [];
+  // per quad
   normals: THREE.Vector3[] = [];
-
+  // per cube
+  skinIndices: number[] = [];
   constructor() {
   }
 
