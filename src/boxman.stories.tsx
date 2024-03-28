@@ -1,5 +1,5 @@
 import React from "react";
-import { Pane } from "tweakpane";
+import { Pane, TabPageApi } from "tweakpane";
 import * as THREE from "three";
 
 import { useThree, Canvas } from "@react-three/fiber";
@@ -235,23 +235,23 @@ function makeGroup(color: number) {
 function makeFinger(builder: MeshBuilder, mod, joints: { [key: string]: Joint }, fingers: Fingers) {
   for (const bone of fingers.thumb) {
     const mm = new MatrixMaker({ isHand: true, offset: joints["_hand"].position, mod });
-    builder.addCube(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+    builder.addCube(bone.head, mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
   }
   for (const bone of fingers.index) {
     const mm = new MatrixMaker({ isHand: true, offset: joints["_hand"].position, mod });
-    builder.addCube(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+    builder.addCube(bone.head, mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
   }
   for (const bone of fingers.middle) {
     const mm = new MatrixMaker({ isHand: true, offset: joints["_hand"].position, mod });
-    builder.addCube(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+    builder.addCube(bone.head, mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
   }
   for (const bone of fingers.ring) {
     const mm = new MatrixMaker({ isHand: true, offset: joints["_hand"].position, mod });
-    builder.addCube(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+    builder.addCube(bone.head, mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
   }
   for (const bone of fingers.little) {
     const mm = new MatrixMaker({ isHand: true, offset: joints["_hand"].position, mod });
-    builder.addCube(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+    builder.addCube(bone.head, mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
   }
 }
 
@@ -263,6 +263,10 @@ class MeshBuilder {
   normals: THREE.Vector3[] = [];
   // per cube
   skinIndices: number[] = [];
+
+  tab: TabPageApi | null = null;
+  prefix: string = '';
+
   constructor() {
   }
 
@@ -287,7 +291,9 @@ class MeshBuilder {
   //
   // add 24 vertices(vertex normal)
   // add 12 triangles
-  addCube(m: THREE.Matrix4) {
+  addCube(name: string, m: THREE.Matrix4) {
+    this.tab.addFolder({ title: `${this.prefix}${name}` });
+
     const positions = [
       // +z
       new THREE.Vector3(-0.5, 0.0, 0.5).applyMatrix4(m),
@@ -328,14 +334,23 @@ class MeshBuilder {
   }
 }
 
-function World({ container }: { container: HTMLDivElement | null }) {
+function World() {
   const { scene } = useThree();
 
   React.useEffect(() => {
-    console.log(container);
+    // console.log(container);
     pane = new Pane({
-      container: container!,
-      title: "Parameters",
+      // container: container!,
+      title: "BoxMan",
+    });
+    const tab = pane.addTab({
+      pages: [
+        { title: 'body' },
+        { title: 'legs' },
+        { title: 'arms' },
+        { title: 'l-fingers' },
+        { title: 'r-fingers' },
+      ],
     });
 
     const { joints, body, legs, arms, fingers } = makeSkeleton();
@@ -347,38 +362,50 @@ function World({ container }: { container: HTMLDivElement | null }) {
     //   // pane.addBinding(group, "position");
     // }
 
-    const builder = new MeshBuilder();
+    const builder = new MeshBuilder(pane);
 
+    builder.tab = tab.pages[0];
     for (const bone of body) {
       const mm = new MatrixMaker({});
-      builder.addCube(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+      builder.addCube(bone.head, mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
     }
 
     // leg
+    builder.tab = tab.pages[1];
     const legOffset = 0.1;
     // left[+X]
     for (const bone of legs) {
+      builder.prefix = '[L]';
       const mm = new MatrixMaker({ mod: p => new THREE.Vector3(p.x + legOffset, p.y, p.z) });
-      builder.addCube(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+      builder.addCube(bone.head, mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
     }
     // right[-X]
     for (const bone of legs) {
+      builder.prefix = '[R]';
       const mm = new MatrixMaker({ mod: p => new THREE.Vector3(p.x - legOffset, p.y, p.z) });
-      builder.addCube(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+      builder.addCube(bone.head, mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
     }
 
     // arm
+    builder.tab = tab.pages[2];
     // left[+X]
     for (const bone of arms) {
+      builder.prefix = '[L]';
       const mm = new MatrixMaker({ isHand: true });
-      builder.addCube(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+      builder.addCube(bone.head, mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
     }
-    makeFinger(builder, undefined, joints, fingers);
     // right[-X]
     for (const bone of arms) {
+      builder.prefix = '[R]';
       const mm = new MatrixMaker({ isHand: true, mod: p => new THREE.Vector3(-p.x, p.y, p.z) });
-      builder.addCube(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+      builder.addCube(bone.head, mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
     }
+    builder.tab = tab.pages[3];
+    builder.prefix = '[L]';
+    makeFinger(builder, undefined, joints, fingers);
+
+    builder.tab = tab.pages[4];
+    builder.prefix = '[R]';
     makeFinger(builder, p => new THREE.Vector3(-p.x, p.y, p.z), joints, fingers);
 
     const geometry = builder.build();
@@ -413,7 +440,7 @@ export function BoxMan() {
         <div ref={ref}></div>
       </div>
       <Canvas>
-        <World container={ref.current} />
+        <World />
       </Canvas>
     </>
   );
