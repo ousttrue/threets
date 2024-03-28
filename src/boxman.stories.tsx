@@ -57,6 +57,67 @@ const darkYellow = 0x999900;
 const red = 0x990000;
 const darkRed = 0x990000;
 
+class HumanBone {
+  constructor(
+    public name: string,
+    public children?: HumanBone[]) { }
+}
+
+//
+// connect first child.
+//
+// body(5): hips-spine-chest-neck-head
+// legs(3x2): upper-lower-foot
+// arms(3x2): upper-lower-hand
+// fingers(3x5x2): shoulder-upper-lower-hand
+const hierarchy = new HumanBone('hips', [
+  new HumanBone('spine', [
+    new HumanBone('chest', [
+      new HumanBone('neck', [
+        new HumanBone('head')]),
+      new HumanBone('leftUpperArm', [
+        new HumanBone('leftLowerArm', [
+          new HumanBone('leftHand', [
+            new HumanBone('leftMiddleProximal', [
+              new HumanBone('leftMiddleIntermediate', [
+                new HumanBone('leftMiddleDistal')]),]),
+            new HumanBone('leftIndexProximal', [
+              new HumanBone('leftIndexIntermediate', [
+                new HumanBone('leftIndexDistal')]),]),
+            new HumanBone('leftRingProximal', [
+              new HumanBone('leftRingIntermediate', [
+                new HumanBone('leftRingDistal')]),]),
+            new HumanBone('leftLittleProximal', [
+              new HumanBone('leftLittleIntermediate', [
+                new HumanBone('leftLittleDistal')]),]),
+            new HumanBone('leftThumbMetacarpal', [
+              new HumanBone('leftThumbProximal', [
+                new HumanBone('leftThumbDistal')])])])])]),
+      new HumanBone('rightUpperArm', [
+        new HumanBone('rightLowerArm', [
+          new HumanBone('rightHand', [
+            new HumanBone('rightMiddleProximal', [
+              new HumanBone('rightMiddleIntermediate', [
+                new HumanBone('rightMiddleDistal')]),]),
+            new HumanBone('rightIndexProximal', [
+              new HumanBone('rightIndexIntermediate', [
+                new HumanBone('rightIndexDistal')]),]),
+            new HumanBone('rightRingProximal', [
+              new HumanBone('rightRingIntermediate', [
+                new HumanBone('rightRingDistal')]),]),
+            new HumanBone('rightLittleProximal', [
+              new HumanBone('rightLittleIntermediate', [
+                new HumanBone('rightLittleDistal')]),]),
+            new HumanBone('rightThumbMetacarpal', [
+              new HumanBone('rightThumbProximal', [
+                new HumanBone('rightThumbDistal')])])])])])])]),
+  new HumanBone('leftUpperLeg', [
+    new HumanBone('leftLowerLeg', [
+      new HumanBone('leftFoot')])]),
+  new HumanBone('rightUpperLeg', [
+    new HumanBone('rightLowerLeg', [
+      new HumanBone('rightFoot')])]),
+]);
 
 //     [+Y]up
 //       A
