@@ -106,6 +106,11 @@ function makeSkeleton(height = 1.6): Skeleton {
     hand: new Joint(new THREE.Vector3(hu.value(shoulderOffset + 2.0), hu.value(5.0), 0)),
     _hand: new Joint(new THREE.Vector3(hu.value(shoulderOffset + 2.3), hu.value(5.0), 0)),
     //
+    thumbProximal: new Joint(new THREE.Vector3(hu.value(-5 * fo + 0), -fo, 2.5 * fo)),
+    thumbIntermediate: new Joint(new THREE.Vector3(hu.value(-5 * fo + 0.2), -fo, 2.5 * fo)),
+    thumbDistal: new Joint(new THREE.Vector3(hu.value(-5 * fo + 0.3), -fo, 2.5 * fo)),
+    _thumb: new Joint(new THREE.Vector3(hu.value(-5 * fo + 0.4), -fo, 2.5 * fo)),
+
     indexProximal: new Joint(new THREE.Vector3(hu.value(0), 0, 1.5 * fo)),
     indexIntermediate: new Joint(new THREE.Vector3(hu.value(0.2), 0, 1.5 * fo)),
     indexDistal: new Joint(new THREE.Vector3(hu.value(0.3), 0, 1.5 * fo)),
@@ -148,7 +153,11 @@ function makeSkeleton(height = 1.6): Skeleton {
   ];
 
   const fingers: Fingers = {
-    thumb: [],
+    thumb: [
+      { head: "thumbProximal", tail: "thumbIntermediate", widthDepth: [0.01, 0.01], color: darkRed },
+      { head: "thumbIntermediate", tail: "thumbDistal", widthDepth: [0.01, 0.01], color: darkYellow },
+      { head: "thumbDistal", tail: "_thumb", widthDepth: [0.01, 0.01], color: darkRed },
+    ],
     index: [
       { head: "indexProximal", tail: "indexIntermediate", widthDepth: [0.01, 0.01], color: darkRed },
       { head: "indexIntermediate", tail: "indexDistal", widthDepth: [0.01, 0.01], color: darkYellow },
@@ -208,7 +217,7 @@ class MatrixMaker {
       pos.add(this.option.offset);
     }
     m.setPosition(pos);
-    console.log(head, tail, width, height, depth);
+    // console.log(head, tail, width, height, depth);
     return m;
   }
 }
@@ -223,41 +232,33 @@ function makeGroup(color: number) {
   return group;
 }
 
-function makeFinger(addGroup, mod, joints: { [key: string]: Joint }, fingers: Fingers) {
-  for (const bone of fingers.index) {
-    const group = makeGroup(bone.color);
-    group.name = bone.head;
+function makeFinger(builder: MeshBuilder, mod, joints: { [key: string]: Joint }, fingers: Fingers) {
+  for (const bone of fingers.thumb) {
     const mm = new MatrixMaker({ isHand: true, offset: joints["_hand"].position, mod });
-    group.applyMatrix4(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
-    addGroup(group, bone);
+    builder.addCube(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
+  }
+  for (const bone of fingers.index) {
+    const mm = new MatrixMaker({ isHand: true, offset: joints["_hand"].position, mod });
+    builder.addCube(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
   }
   for (const bone of fingers.middle) {
-    const group = makeGroup(bone.color);
-    group.name = bone.head;
     const mm = new MatrixMaker({ isHand: true, offset: joints["_hand"].position, mod });
-    group.applyMatrix4(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
-    addGroup(group, bone);
+    builder.addCube(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
   }
   for (const bone of fingers.ring) {
-    const group = makeGroup(bone.color);
-    group.name = bone.head;
     const mm = new MatrixMaker({ isHand: true, offset: joints["_hand"].position, mod });
-    group.applyMatrix4(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
-    addGroup(group, bone);
+    builder.addCube(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
   }
   for (const bone of fingers.little) {
-    const group = makeGroup(bone.color);
-    group.name = bone.head;
     const mm = new MatrixMaker({ isHand: true, offset: joints["_hand"].position, mod });
-    group.applyMatrix4(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
-    addGroup(group, bone);
+    builder.addCube(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
   }
 }
 
 class MeshBuilder {
   indices: number[] = [];
   positions: THREE.Vector3[] = [];
-  // normals: number[] = [];
+  normals: THREE.Vector3[] = [];
 
   constructor() {
   }
@@ -267,6 +268,12 @@ class MeshBuilder {
     this.positions.push(p0, p1, p2, p3);
     this.indices.push(i + 0, i + 1, i + 2);
     this.indices.push(i + 2, i + 3, i + 0);
+
+    const v01 = new THREE.Vector3(p1.x, p1.y, p1.z).sub(p0);
+    const v02 = new THREE.Vector3(p2.x, p2.y, p2.z).sub(p0);
+    const n = new THREE.Vector3();
+    n.crossVectors(v01, v02);
+    this.normals.push(n);
   }
 
   //  7+-+6
@@ -292,6 +299,11 @@ class MeshBuilder {
     ];
     const quads = [
       [0, 1, 2, 3],
+      [1, 5, 6, 2],
+      [5, 4, 7, 6],
+      [4, 0, 3, 7],
+      [3, 2, 6, 7],
+      [1, 0, 4, 5],
     ];
     for (const [i0, i1, i2, i3] of quads) {
       this.addQuad(positions[i0], positions[i1], positions[i2], positions[i3]);
@@ -304,10 +316,11 @@ class MeshBuilder {
     g.setIndex(this.indices);
 
     const position = new Float32Array(this.positions.map(v => v.toArray()).flat());
-    console.log(this.indices, position);
     g.setAttribute('position', new THREE.BufferAttribute(position, 3));
 
-    // g.setAttribute('position', );
+    const normal = new Float32Array(this.normals.map(v => [v.toArray(), v.toArray(), v.toArray(), v.toArray()].flat()).flat());
+    g.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
+
     return g;
   }
 }
@@ -357,13 +370,13 @@ function World({ container }: { container: HTMLDivElement | null }) {
       const mm = new MatrixMaker({ isHand: true });
       builder.addCube(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
     }
-    // makeFinger(addGroup, undefined, joints, fingers);
+    makeFinger(builder, undefined, joints, fingers);
     // right[-X]
     for (const bone of arms) {
       const mm = new MatrixMaker({ isHand: true, mod: p => new THREE.Vector3(-p.x, p.y, p.z) });
       builder.addCube(mm.makeMatrix(joints[bone.head].position, joints[bone.tail].position, ...bone.widthDepth));
     }
-    // makeFinger(addGroup, p => new THREE.Vector3(-p.x, p.y, p.z), joints, fingers);
+    makeFinger(builder, p => new THREE.Vector3(-p.x, p.y, p.z), joints, fingers);
 
     const geometry = builder.build();
     const material = new THREE.MeshStandardMaterial({ color: darkGreen });
