@@ -1,6 +1,7 @@
 import React from "react";
 import { useAtom } from "jotai";
 import { viewerAtom, fromGltf } from "./viewer/vieweratom";
+import './viewer.css'
 
 import DockLayout, { type LayoutData } from "rc-dock";
 import "rc-dock/dist/rc-dock.css";

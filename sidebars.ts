@@ -34,7 +34,14 @@ const sidebars: SidebarsConfig = {
           link: { type: "doc", id: "libs/r3f/index" },
           items: [, "libs/r3f/drei"],
         },
-        "libs/gui",
+        {
+          type: "category",
+          label: "gui",
+          link: { type: "doc", id: "libs/gui/index" },
+          items: [
+            "libs/gui/tree",
+          ],
+        },
       ],
     },
     {

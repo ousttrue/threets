@@ -1,3 +1,9 @@
+https://github.com/pmndrs/leva
+
+- https://leva.pmnd.rs/?path=/story/inputs-string--simple
+
+- [【React】値を操作するコントローラーパッケージ（LEVA） #React - Qiita](https://qiita.com/nemutas/items/a5efdd1e8f2040f6e6e5)
+
 ## trouble
 
 ```txt

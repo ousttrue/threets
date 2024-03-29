@@ -17,7 +17,7 @@ class NodeItem {
   constructor(
     public readonly o: THREE.Object3D,
     public readonly index: number
-  ) {}
+  ) { }
 
   get name(): string {
     let prefix = this.o.children && this.o.children.length ? "📁" : "📄";

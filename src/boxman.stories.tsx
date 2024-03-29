@@ -16,11 +16,6 @@ import { OrbitControls, Grid } from "@react-three/drei";
 
 let pane: Pane | null = null;
 
-class Joint {
-  constructor(public readonly position: THREE.Vector3,) {
-  }
-};
-
 const darkGreen = 0x009900;
 const darkYellow = 0x999900;
 const red = 0x990000;
