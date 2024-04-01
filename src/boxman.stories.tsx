@@ -8,6 +8,38 @@ import { OrbitControls, Grid } from "@react-three/drei";
 import Split from 'react-split';
 import './split.css';
 
+import "react-complex-tree/lib/style-modern.css";
+import { shortTree } from "./demodata";
+
+import {
+  UncontrolledTreeEnvironment,
+  StaticTreeDataProvider,
+  TreeDataProvider,
+  Tree,
+  Disposable,
+  TreeItem,
+  TreeItemIndex,
+} from "react-complex-tree";
+
+class NodeItem {
+  constructor(
+    public readonly o: THREE.Object3D,
+    public readonly index: number
+  ) { }
+
+  get name(): string {
+    let prefix = this.o.children && this.o.children.length ? "📁" : "📄";
+    if (this.o instanceof THREE.Mesh) {
+      prefix = "📦";
+    }
+    if (this.o.name) {
+      return `${prefix}${this.o.name}`;
+    } else {
+      return `${prefix}${this.index}`;
+    }
+  }
+}
+
 
 let pane: Pane | null = null;
 
@@ -278,8 +310,8 @@ class MeshBuilder {
 
   constructor(
     height: number,
-    values: { [key: string]: BoneSize },
-    public readonly tab: TabApi) {
+    values: { [key: string]: BoneSize }
+  ) {
 
     this.values = {};
     this.hu = new HeadUnit6(height);
@@ -351,6 +383,7 @@ class MeshBuilder {
   traverse(bone: HumanBone, parent?: THREE.Vector3): THREE.Object3D {
     const group = new THREE.Group();
     const value = this.getSize(bone.name);
+    group.name = bone.name
 
     // head
     const head =
@@ -382,8 +415,8 @@ class MeshBuilder {
     this.addCube(m);
 
     // page
-    const page = getTab(bone.name);
-    this.tab.pages[page].addFolder({ title: bone.name });
+    // const page = getTab(bone.name);
+    // this.tab.pages[page].addFolder({ title: bone.name });
 
     const tail = new THREE.Vector3(0, value.len, 0);
     tail.applyMatrix4(r);
@@ -417,39 +450,32 @@ class MeshBuilder {
   }
 }
 
-function World() {
+function World({ root, selected }: { root?: THREE.Object3D, selected?: THREE.Object3D }) {
   const { scene } = useThree();
 
-  React.useEffect(() => {
-    // console.log(container);
-    pane = new Pane({
-      // container: container!,
-      title: "BoxMan",
-    });
-    const tab = pane.addTab({
-      pages: [
-        { title: 'body' },
-        { title: 'legs' },
-        { title: 'arms' },
-        { title: 'l-fingers' },
-        { title: 'r-fingers' },
-      ],
-    });
-
-    const root = new THREE.Group();
-
-    const builder = new MeshBuilder(1.6, values, tab);
-    const hips = builder.traverse(hierarchy);
-    root.add(hips);
-
-    const geometry = builder.build();
-    const material = new THREE.MeshStandardMaterial({ color: darkGreen });
-    const mesh = new THREE.Mesh(geometry, material);
-    root.add(mesh);
-
+  // scene.clear();
+  console.log(root);
+  if (root) {
     scene.add(root);
+  }
 
-  }, []);
+  const { invalidate } = useThree()
+
+  React.useEffect(() => {
+    if (selected) {
+      pane = new Pane({
+        // container: container!,
+        title: "BoxMan",
+      });
+      pane.addBinding(selected, "position")
+      // pane.on('change', (ev) => {
+      //   console.log('changed: ' + JSON.stringify(ev.value));
+      //   // setFrame(frame + 1);
+      //   invalidate();
+      // });
+    }
+  }, [selected]);
+
 
   return (
     <>
@@ -463,11 +489,132 @@ function World() {
   );
 }
 
+class Object3DProvider implements TreeDataProvider {
+  map: Map<TreeItemIndex, TreeItem<NodeItem>> = new Map();
+  constructor(public readonly root?: THREE.Object3D) {
+    const traverse = (o: THREE.Object3D) => {
+      const item = {
+        index: o.id,
+        data: new NodeItem(o, this.map.size),
+        children: o.children.map((child) => child.id),
+        isFolder: o.children.length > 0,
+      } satisfies TreeItem<NodeItem>;
+      this.map.set(o.id, item);
+      // console.log("add", o);
+      for (const child of o.children) {
+        traverse(child);
+      }
+    };
+    if (root) {
+      traverse(root);
+    }
+  }
+
+  async getTreeItem(itemId: TreeItemIndex) {
+    if (itemId == "empty") {
+      // @ts-ignore
+      return {
+        index: "empty",
+        data: { name: "empty" },
+      };
+    }
+
+    if (itemId == "root") {
+      return {
+        index: "root",
+        data: { name: "root" },
+        // @ts-ignore
+        children: [this.root.id],
+      };
+    }
+
+    const item = this.map.get(itemId)!;
+    return item;
+  }
+}
+
+
+export function SceneTree(props: { root: THREE.Object3D, setSelected: Function }) {
+  // const [viewer, setViewer] = useAtom(viewerAtom);
+
+  const [provider, setProvider] = React.useState<Object3DProvider | null>(null);
+
+  if (!provider || provider.root != props.root) {
+    setProvider(new Object3DProvider(props.root));
+  }
+
+  return (
+    <UncontrolledTreeEnvironment<THREE.Object3D>
+      disableMultiselect
+      canDragAndDrop
+      canDropOnFolder
+      canReorderItems
+      // @ts-ignore
+      dataProvider={provider ?? new StaticTreeDataProvider([])}
+      getItemTitle={(item) => {
+        // console.log("getItemTitle", item);
+        return item.data.name;
+      }}
+      viewState={{
+        "tree-1": {},
+      }}
+      onSelectItems={(items: TreeItemIndex[], treeId: string) => {
+        console.log("onSelectItems", treeId, provider?.map.get(items[0])?.data.o);
+        props.setSelected(provider?.map.get(items[0])?.data.o);
+        // setViewer({
+        //   ...viewer,
+        //   selected: provider?.map.get(items[0])?.data.o,
+        // });
+      }}
+    >
+      <Tree
+        treeId="tree-1"
+        rootItem={props.root ? "root" : "empty"}
+        treeLabel="Three.js scene"
+      />
+    </UncontrolledTreeEnvironment>
+  );
+}
+
 export function BoxMan() {
   const ref = React.useRef(null);
-  const [container, setContainer] = React.useState<HTMLDivElement | null>(null);
+  // const [container, setContainer] = React.useState<HTMLDivElement | null>(null);
+  // React.useEffect(() => {
+  //   setContainer(ref.current);
+  // }, []);
+
+  const [root, setRoot] = React.useState<THREE.Object3D>(null);
+  const [selected, setSelected] = React.useState<THREE.Object3D>(null);
+  // const [frame, setFrame] = React.useState(1);
+
   React.useEffect(() => {
-    setContainer(ref.current);
+    // console.log(container);
+    // const tab = pane.addTab({
+    //   pages: [
+    //     { title: 'body' },
+    //     { title: 'legs' },
+    //     { title: 'arms' },
+    //     { title: 'l-fingers' },
+    //     { title: 'r-fingers' },
+    //     { title: 'selected' },
+    //   ],
+    // });
+
+    const root = new THREE.Group();
+    root.name = '__root__';
+
+    const builder = new MeshBuilder(1.6, values);
+    const hips = builder.traverse(hierarchy);
+    root.add(hips);
+
+    const geometry = builder.build();
+    const material = new THREE.MeshStandardMaterial({ color: darkGreen });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.name = 'mesh'
+    root.add(mesh);
+
+    setRoot(root);
+
   }, []);
 
   return (
@@ -475,13 +622,16 @@ export function BoxMan() {
       className="split"
       style={{ height: '100%' }}
     >
-      <div>a</div>
+      <div>
+        <SceneTree root={root} setSelected={setSelected} />
+      </div>
+
       <div>
         <div style={{ display: "flex" }}>
           <div ref={ref}></div>
         </div>
         <Canvas>
-          <World />
+          <World root={root} selected={selected} />
         </Canvas>
       </div>
     </Split>
