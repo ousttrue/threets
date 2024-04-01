@@ -34,6 +34,7 @@
     "rc-dock": "^3.2.18",
     "react-complex-tree": "^2.3.4",
     "react-dropzone": "^14.2.3",
+    "react-split": "^2.0.14",
     "react-tweakpane": "github:ousttrue/react-tweakpane#tweakpane4",
     "three": "^0.160.0",
     "tweakpane": "^4.0.3",

@@ -5,6 +5,10 @@ import * as THREE from "three";
 import { useThree, Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid } from "@react-three/drei";
 
+import Split from 'react-split';
+import './split.css';
+
+
 let pane: Pane | null = null;
 
 const darkGreen = 0x009900;
@@ -166,6 +170,21 @@ class BoneSize {
     m.makeScale(x, this.len, z);
     return m;
   }
+
+  multiply(s: number): BoneSize {
+    const size = this.size;
+    size.x *= s;
+    if (size.z) {
+      size.z *= s;
+    }
+    let offset = this.offset;
+    if (offset) {
+      offset.x *= s;
+      offset.y *= s;
+      offset.z *= s;
+    }
+    return new BoneSize(this.len * s, size, offset);
+  }
 };
 
 const fs = { x: 0.08 };
@@ -235,55 +254,6 @@ class HeadUnit6 {
   }
 };
 
-interface MatrixMakerOption {
-  isHand?: boolean;
-  mod?: (pos: THREE.Vector3) => THREE.Vector3;
-  offset?: THREE.Vector3;
-}
-
-// class MatrixMaker {
-//   constructor(public readonly option: MatrixMakerOption) {
-//     if (this.option.mod && this.option.offset) {
-//       this.option.offset = this.option.mod(this.option.offset);
-//     }
-//   }
-//
-//   makeMatrix(head: THREE.Vector3, tail: THREE.Vector3, width: number, depth: number) {
-//     const m = new THREE.Matrix4();
-//
-//     if (this.option.mod) {
-//       head = this.option.mod(head);
-//       tail = this.option.mod(tail);
-//     }
-//
-//     const y = new THREE.Vector3();
-//     y.set(tail.x, tail.y, tail.z).sub(head);
-//     const height = y.length();
-//     y.normalize();
-//     const z = this.option.isHand ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
-//     const x = new THREE.Vector3(); x.crossVectors(y, z).normalize();
-//     m.makeBasis(x, y, z);
-//     m.scale(new THREE.Vector3(width, height, depth));
-//     const pos = new THREE.Vector3(head.x, head.y, head.z);
-//     if (this.option.offset) {
-//       pos.add(this.option.offset);
-//     }
-//     m.setPosition(pos);
-//     // console.log(head, tail, width, height, depth);
-//     return m;
-//   }
-// }
-//
-// function makeGroup(color: number) {
-//   const geometry = new THREE.BoxGeometry(1, 1, 1);
-//   const material = new THREE.MeshStandardMaterial({ color });
-//   const cube = new THREE.Mesh(geometry, material);
-//   const group = new THREE.Group();
-//   group.add(cube);
-//   cube.position.set(0, 0.5, 0);
-//   return group;
-// }
-
 //     o
 //o----|----o
 //     |
@@ -292,29 +262,10 @@ interface MatrixMakerOption {
 //    | |
 //
 
-class Humanoid {
-  // position: { [key: string]: THREE.Vector3 };
-  tab: { [key: string]: number };
-  // hu: HeadUnit6;
-
-  constructor(
-    public readonly values: { [key: string]: BoneSize },
-    public readonly height: number,
-  ) {
-    // this.hu = new HeadUnit6(height);
-    // const shoulderOffset = 0.5;
-    // const fo = 0.02;
-    // const lo = this.hu.units(0.5);
-    // this.position = {
-    // };
-  }
-  //
-  // widthDepth(name: string): [number, number] {
-  //   return [0.1, 0.1]
-  // }
-}
-
 class MeshBuilder {
+  hu: HeadUnit6;
+  values: { [key: string]: BoneSize };
+
   indices: number[] = [];
   // per vertex
   positions: THREE.Vector3[] = [];
@@ -326,8 +277,16 @@ class MeshBuilder {
   prefix: string = '';
 
   constructor(
-    public readonly humanoid: Humanoid,
+    height: number,
+    values: { [key: string]: BoneSize },
     public readonly tab: TabApi) {
+
+    this.values = {};
+    this.hu = new HeadUnit6(height);
+    for (const key in values) {
+      const value = values[key];
+      this.values[key] = value.multiply(this.hu.units(1));
+    }
   }
 
   addQuad(p0: THREE.Vector3, p1: THREE.Vector3, p2: THREE.Vector3, p3: THREE.Vector3) {
@@ -351,7 +310,7 @@ class MeshBuilder {
   //
   // add 24 vertices(vertex normal)
   // add 12 triangles
-  addCube(name: string, m: THREE.Matrix4) {
+  addCube(m: THREE.Matrix4) {
     const positions = [
       // +z
       new THREE.Vector3(-0.5, 0.0, 0.5).applyMatrix4(m),
@@ -379,24 +338,25 @@ class MeshBuilder {
 
   getSize(name: string): BoneSize {
     if (name.startsWith("left")) {
-      return this.humanoid.values[name.substring(4)];
+      return this.values[name.substring(4)];
     }
     else if (name.startsWith("right")) {
-      return this.humanoid.values[name.substring(5)];
+      return this.values[name.substring(5)];
     }
     else {
-      return this.humanoid.values[name];
+      return this.values[name];
     }
   }
 
-  traverse(bone: HumanBone, parent?: THREE.Vector3) {
+  traverse(bone: HumanBone, parent?: THREE.Vector3): THREE.Object3D {
+    const group = new THREE.Group();
     const value = this.getSize(bone.name);
 
     // head
     const head =
       (parent)
         ? new THREE.Vector3(parent.x, parent.y, parent.z)
-        : new THREE.Vector3(0, 3/*this.humanoid.height / 2, 0*/)
+        : new THREE.Vector3(0, this.hu.units(3), 0)
       ;
     if (value.offset) {
       if (bone.name.startsWith("right")) {
@@ -406,7 +366,7 @@ class MeshBuilder {
         head.add(value.offset);
       }
     }
-    console.log(bone.name, head);
+    // console.log(bone.name, head);
 
     // TRS
     const m = new THREE.Matrix4();
@@ -415,8 +375,11 @@ class MeshBuilder {
     const r = bone.rotation()
     const s = value.scale();
     m.multiplyMatrices(t, r);
+
+    group.applyMatrix4(m);
+
     m.multiply(s);
-    this.addCube(bone.name, m);
+    this.addCube(m);
 
     // page
     const page = getTab(bone.name);
@@ -428,12 +391,16 @@ class MeshBuilder {
     for (let i = 0; i < bone.children.length; ++i) {
       const child = bone.children[i];
       if (this.getSize(child.name).offset) {
-        this.traverse(child, head);
+        const node = this.traverse(child, head);
+        group.add(node);
       }
       else {
-        this.traverse(child, tail);
+        const node = this.traverse(child, tail);
+        group.add(node);
       }
     }
+
+    return group;
   }
 
   build(): THREE.BufferGeometry {
@@ -469,13 +436,18 @@ function World() {
       ],
     });
 
-    const builder = new MeshBuilder(new Humanoid(values, 1.6), tab);
-    builder.traverse(hierarchy);
+    const root = new THREE.Group();
+
+    const builder = new MeshBuilder(1.6, values, tab);
+    const hips = builder.traverse(hierarchy);
+    root.add(hips);
 
     const geometry = builder.build();
     const material = new THREE.MeshStandardMaterial({ color: darkGreen });
     const mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
+    root.add(mesh);
+
+    scene.add(root);
 
   }, []);
 
@@ -499,13 +471,20 @@ export function BoxMan() {
   }, []);
 
   return (
-    <>
-      <div style={{ display: "flex" }}>
-        <div ref={ref}></div>
+    <Split
+      className="split"
+      style={{ height: '100%' }}
+    >
+      <div>a</div>
+      <div>
+        <div style={{ display: "flex" }}>
+          <div ref={ref}></div>
+        </div>
+        <Canvas>
+          <World />
+        </Canvas>
       </div>
-      <Canvas>
-        <World />
-      </Canvas>
-    </>
+    </Split>
   );
 }
+
