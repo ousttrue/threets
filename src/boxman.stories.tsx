@@ -1,12 +1,3 @@
-//     [+Y]up
-//       A
-//       |
-//right  |   left
-//[-X]<--o-->[+X]
-//      /
-//     L
-//   [+Z]front
-
 import React from "react";
 import { Pane, TabApi } from "tweakpane";
 import * as THREE from "three";
@@ -22,70 +13,210 @@ const red = 0x990000;
 const darkRed = 0x990000;
 const fingerSize: [number, number] = [0.1, 0.1];
 
+type Coords = [THREE.Vector3, THREE.Vector3];
 class HumanBone {
   constructor(
     public name: string,
-    public color: number,
-    public widthDepth?: [number, number],
-    public children?: (HumanBone | string)[],
+    public yz: Coords,
+    public children: HumanBone[],
   ) { }
+
+  rotation(): THREE.Matrix4 {
+    const [y, z] = this.yz;
+    const x = new THREE.Vector3();
+    x.crossVectors(y, z);
+    const m = new THREE.Matrix4();
+    m.makeBasis(x, y, z);
+    return m;
+  }
 }
 
+//     [+Y]up
+//       A
+//       |
+//right  |   left
+//[-X]<--o-->[+X]
+//      /
+//     L
+//   [+Z]forward
+
+const LEFT = new THREE.Vector3(1, 0, 0);
+const RIGHT = new THREE.Vector3(-1, 0, 0);
+const UP = new THREE.Vector3(0, 1, 0);
+const DOWN = new THREE.Vector3(0, -1, 0);
+const FORWARD = new THREE.Vector3(0, 0, 1);
+const BACK = new THREE.Vector3(0, 0, -1);
+
+// Y is tail dir
+// Z is bend dir
 //
+//   o child tail
+// Z | Y
+//  \|/
+//   o--> X
+//  /
+// /
+//o head
+//
+const BODY_AXIS = [UP, FORWARD] as Coords;
+const LEG_AXIS = [DOWN, BACK] as Coords;
+const LEFT_ARM_AXIS = [LEFT, FORWARD] as Coords;
+const LEFT_HAND_AXIS = [LEFT, DOWN] as Coords;
+const RIGHT_ARM_AXIS = [RIGHT, FORWARD] as Coords;
+const RIGHT_HAND_AXIS = [RIGHT, DOWN] as Coords;
+
 // connect first child.
 //
 // body(5): hips-spine-chest-neck-head
 // legs(3x2): upper-lower-foot
 // arms(3x2): upper-lower-hand
 // fingers(3x5x2): shoulder-upper-lower-hand
-const hierarchy = new HumanBone('hips', darkGreen, [1.0, 0.4], [
-  new HumanBone('spine', darkYellow, [0.9, 0.4], [
-    new HumanBone('chest', darkGreen, [1.0, 0.4], [
-      new HumanBone('neck', darkYellow, [0.5, 0.4], [
-        new HumanBone('head', darkRed, [1, 1], ['_head'])]),
-      new HumanBone('leftUpperArm', darkGreen, [0.2, 0.2], [
-        new HumanBone('leftLowerArm', darkYellow, [0.2, 0.2], [
-          new HumanBone('leftHand', darkRed, [0.1, 0.1], [
-            new HumanBone('leftMiddleProximal', darkGreen, fingerSize, [
-              new HumanBone('leftMiddleIntermediate', darkYellow, fingerSize, [
-                new HumanBone('leftMiddleDistal', darkRed, fingerSize, ['_leftMiddleDistal'])])]),
-            new HumanBone('leftIndexProximal', darkGreen, fingerSize, [
-              new HumanBone('leftIndexIntermediate', darkGreen, fingerSize, [
-                new HumanBone('leftIndexDistal', darkGreen, fingerSize, ['_leftIndexDistal'])])]),
-            new HumanBone('leftRingProximal', darkGreen, fingerSize, [
-              new HumanBone('leftRingIntermediate', darkGreen, fingerSize, [
-                new HumanBone('leftRingDistal', darkGreen, fingerSize, ['_leftRingDistal'])])]),
-            new HumanBone('leftLittleProximal', darkGreen, fingerSize, [
-              new HumanBone('leftLittleIntermediate', darkGreen, fingerSize, [
-                new HumanBone('leftLittleDistal', darkGreen, fingerSize, ['_leftLittleDistal'])])]),
-            new HumanBone('leftThumbMetacarpal', darkGreen, fingerSize, [
-              new HumanBone('leftThumbProximal', darkGreen, fingerSize, [
-                new HumanBone('leftThumbDistal', darkGreen, fingerSize, ['_leftThumbDistal'])])])])])]),
-      new HumanBone('rightUpperArm', darkGreen, [0.2, 0.2], [
-        new HumanBone('rightLowerArm', darkYellow, [0.2, 0.2], [
-          new HumanBone('rightHand', darkRed, [0.1, 0.1], [
-            new HumanBone('rightMiddleProximal', darkGreen, fingerSize, [
-              new HumanBone('rightMiddleIntermediate', darkGreen, fingerSize, [
-                new HumanBone('rightMiddleDistal', darkGreen, fingerSize, ['_rightMiddleDistal'])])]),
-            new HumanBone('rightIndexProximal', darkGreen, fingerSize, [
-              new HumanBone('rightIndexIntermediate', darkGreen, fingerSize, [
-                new HumanBone('rightIndexDistal', darkGreen, fingerSize, ['_rightIndexDistal'])])]),
-            new HumanBone('rightRingProximal', darkGreen, fingerSize, [
-              new HumanBone('rightRingIntermediate', darkGreen, fingerSize, [
-                new HumanBone('rightRingDistal', darkGreen, fingerSize, ['_rightRingDistal'])])]),
-            new HumanBone('rightLittleProximal', darkGreen, fingerSize, [
-              new HumanBone('rightLittleIntermediate', darkGreen, fingerSize, [
-                new HumanBone('rightLittleDistal', darkGreen, fingerSize, ['_rightLittleDistal'])])]),
-            new HumanBone('rightThumbMetacarpal', darkGreen, fingerSize, [
-              new HumanBone('rightThumbProximal', darkGreen, fingerSize, [
-                new HumanBone('rightThumbDistal', darkGreen, fingerSize, ['_rightThumbDistal'])])])])])])])]),
-  new HumanBone('leftUpperLeg', darkYellow, [0.2, 0.2], [
-    new HumanBone('leftLowerLeg', darkGreen, [0.2, 0.2], [
-      new HumanBone('leftFoot', darkRed, [0.2, 0.2], ['_leftFoot'])])]),
-  new HumanBone('rightUpperLeg', darkYellow, [0.2, 0.2], [
-    new HumanBone('rightLowerLeg', darkGreen, [0.2, 0.2], [
-      new HumanBone('rightFoot', darkRed, [0.2, 0.2], ['_rightFoot'])])]),
+const hierarchy = new HumanBone('hips', BODY_AXIS, [
+  new HumanBone('spine', BODY_AXIS, [
+    new HumanBone('chest', BODY_AXIS, [
+      new HumanBone('neck', BODY_AXIS, [
+        new HumanBone('head', BODY_AXIS, [
+          new HumanBone('face', [FORWARD, DOWN], [])
+        ])]),
+      new HumanBone('leftShoulder', LEFT_HAND_AXIS, [
+        new HumanBone('leftUpperArm', LEFT_ARM_AXIS, [
+          new HumanBone('leftLowerArm', LEFT_ARM_AXIS, [
+            new HumanBone('leftHand', LEFT_HAND_AXIS, [
+              new HumanBone('leftMiddleProximal', LEFT_HAND_AXIS, [
+                new HumanBone('leftMiddleIntermediate', LEFT_HAND_AXIS, [
+                  new HumanBone('leftMiddleDistal', LEFT_HAND_AXIS, [])])]),
+              new HumanBone('leftIndexProximal', LEFT_HAND_AXIS, [
+                new HumanBone('leftIndexIntermediate', LEFT_HAND_AXIS, [
+                  new HumanBone('leftIndexDistal', LEFT_HAND_AXIS, [])])]),
+              new HumanBone('leftRingProximal', LEFT_HAND_AXIS, [
+                new HumanBone('leftRingIntermediate', LEFT_HAND_AXIS, [
+                  new HumanBone('leftRingDistal', LEFT_HAND_AXIS, [])])]),
+              new HumanBone('leftLittleProximal', LEFT_HAND_AXIS, [
+                new HumanBone('leftLittleIntermediate', LEFT_HAND_AXIS, [
+                  new HumanBone('leftLittleDistal', LEFT_HAND_AXIS, [])])]),
+              new HumanBone('leftThumbMetacarpal', LEFT_HAND_AXIS, [
+                new HumanBone('leftThumbProximal', LEFT_HAND_AXIS, [
+                  new HumanBone('leftThumbDistal', LEFT_HAND_AXIS, [])])])])])])]),
+      new HumanBone('rightShoulder', RIGHT_ARM_AXIS, [
+        new HumanBone('rightUpperArm', RIGHT_ARM_AXIS, [
+          new HumanBone('rightLowerArm', RIGHT_ARM_AXIS, [
+            new HumanBone('rightHand', RIGHT_HAND_AXIS, [
+              new HumanBone('rightMiddleProximal', RIGHT_HAND_AXIS, [
+                new HumanBone('rightMiddleIntermediate', RIGHT_HAND_AXIS, [
+                  new HumanBone('rightMiddleDistal', RIGHT_HAND_AXIS, [])])]),
+              new HumanBone('rightIndexProximal', RIGHT_HAND_AXIS, [
+                new HumanBone('rightIndexIntermediate', RIGHT_HAND_AXIS, [
+                  new HumanBone('rightIndexDistal', RIGHT_HAND_AXIS, [])])]),
+              new HumanBone('rightRingProximal', RIGHT_HAND_AXIS, [
+                new HumanBone('rightRingIntermediate', RIGHT_HAND_AXIS, [
+                  new HumanBone('rightRingDistal', RIGHT_HAND_AXIS, [])])]),
+              new HumanBone('rightLittleProximal', RIGHT_HAND_AXIS, [
+                new HumanBone('rightLittleIntermediate', RIGHT_HAND_AXIS, [
+                  new HumanBone('rightLittleDistal', RIGHT_HAND_AXIS, [])])]),
+              new HumanBone('rightThumbMetacarpal', RIGHT_HAND_AXIS, [
+                new HumanBone('rightThumbProximal', RIGHT_HAND_AXIS, [
+                  new HumanBone('rightThumbDistal', RIGHT_HAND_AXIS, [])])])])])])])])]),
+  new HumanBone('leftUpperLeg', LEG_AXIS, [
+    new HumanBone('leftLowerLeg', LEG_AXIS, [
+      new HumanBone('leftFoot', LEG_AXIS, [])])]),
+  new HumanBone('rightUpperLeg', LEG_AXIS, [
+    new HumanBone('rightLowerLeg', LEG_AXIS, [
+      new HumanBone('rightFoot', LEG_AXIS, [])])]),
 ]);
+
+// 6頭身
+//
+//  +-+     _head
+//  +-+0.5: head
+//   | 
+//  +-+0.5: neck
+//  +-+2/3: chest
+//  +-+2/3: spine
+//  +-+2/3: hips
+//    |1.5: upper
+//    o
+//    |1.0: lower
+//    |0.5: foot
+//    _   : _foot
+//
+//  1/2 1/4 8/1 8/1 = 1
+//  +--+----
+//  +  +----
+// o+  +----
+//  +--+----
+//  +----
+//
+
+class BoneSize {
+  constructor(
+    // Y
+    public readonly len: number,
+    // XZ
+    public readonly size: { x: number, z?: number },
+    // for not connected bones(upperLeg, shoulder ... etc)
+    public readonly offset?: THREE.Vector3,
+  ) { }
+
+  scale(): THREE.Matrix4 {
+    let { x, z } = this.size;
+    if (z == undefined) {
+      z = x;
+    }
+    const m = new THREE.Matrix4();
+    m.makeScale(x, this.len, z);
+    return m;
+  }
+};
+
+const fs = { x: 0.08 };
+const values = {
+  hips: new BoneSize(2.0 / 3.0, { x: 1.0, z: 0.5 }),
+  spine: new BoneSize(2.0 / 3.0, { x: 0.8, z: 0.5 }),
+  chest: new BoneSize(2.0 / 3.0, { x: 0.9, z: 0.5 }),
+  neck: new BoneSize(1.0 / 2.0, { x: 0.3 }),
+  head: new BoneSize(1.0 / 2.0, { x: 0.7 }),
+  face: new BoneSize(0.2, { x: 0.7, z: 0.8 }, new THREE.Vector3(0, 0.07, 0.2)),
+  // [legs]
+  UpperLeg: new BoneSize(1.5, { x: 0.2 }, new THREE.Vector3(0.5, 0, 0)),
+  LowerLeg: new BoneSize(1.0, { x: 0.2 }),
+  Foot: new BoneSize(0.5, { x: 0.2 }),
+  // [arms]
+  Shoulder: new BoneSize(0.2, { x: 0.2 }, new THREE.Vector3(0.5, 2.0 / 3.0, 0)),
+  UpperArm: new BoneSize(1, { x: 0.2 }),
+  LowerArm: new BoneSize(1, { x: 0.2 }),
+  Hand: new BoneSize(1.0 / 2.0, { x: 0.3, z: 0.05 }),
+  // [fingers]
+  ThumbMetacarpal: new BoneSize(1.0 / 4.0, fs, new THREE.Vector3(1.0 / 2.0 - 0.1, -0.1, 0.2)),
+  ThumbProximal: new BoneSize(1.0 / 8.0, fs),
+  ThumbDistal: new BoneSize(1.0 / 8.0, fs),
+  IndexProximal: new BoneSize(1.0 / 4.0, fs, new THREE.Vector3(1.0 / 2.0, 0, 0.1)),
+  IndexIntermediate: new BoneSize(1.0 / 8.0, fs),
+  IndexDistal: new BoneSize(1.0 / 8.0, fs),
+  MiddleProximal: new BoneSize(1.0 / 4.0, fs),
+  MiddleIntermediate: new BoneSize(1.0 / 8.0, fs),
+  MiddleDistal: new BoneSize(1.0 / 8.0, fs),
+  RingProximal: new BoneSize(1.0 / 4.0, fs, new THREE.Vector3(1.0 / 2.0, 0, -0.1)),
+  RingIntermediate: new BoneSize(1.0 / 8.0, fs),
+  RingDistal: new BoneSize(1.0 / 8.0, fs),
+  LittleProximal: new BoneSize(1.0 / 4.0, fs, new THREE.Vector3(1.0 / 2.0, 0, -0.2)),
+  LittleIntermediate: new BoneSize(1.0 / 8.0, fs),
+  LittleDistal: new BoneSize(1.0 / 8.0, fs),
+} as { [key: string]: BoneSize };
+
+const tabs: string[][] = [
+  ['face', 'head', 'neck', 'chest', 'spine', 'hips',],
+  ['leftUpperLeg', 'leftLowerLeg', 'leftFoot', '_leftFoot', 'rightUpperLeg', 'rightLowerLeg', 'rightFoot', '_rightFoot',],
+  ['leftShoulder', 'leftUpperArm', 'leftLowerArm', 'leftHand', '_leftHand', 'rightShoulder', 'rightUpperArm', 'rightLowerArm', 'rightHand', '_rightHand',],
+  ['leftThumbMetacarpal', 'leftThumbProximal', 'leftThumbDistal', '_leftThumb', 'leftIndexProximal', 'leftIndexIntermediate', 'leftIndexDistal', '_leftIndex', 'leftMiddleProximal', 'leftMiddleIntermediate', 'leftMiddleDistal', '_leftMiddle', 'leftRingProximal', 'leftRingIntermediate', 'leftRingDistal', '_leftRing', 'leftLittleProximal', 'leftLittleIntermediate', 'leftLittleDistal', '_leftLittle',],
+  ['rightThumbMetacarpal', 'rightThumbProximal', 'rightThumbDistal', '_rightThumb', 'rightIndexProximal', 'rightIndexIntermediate', 'rightIndexDistal', '_rightIndex', 'rightMiddleProximal', 'rightMiddleIntermediate', 'rightMiddleDistal', '_rightMiddle', 'rightRingProximal', 'rightRingIntermediate', 'rightRingDistal', '_rightRing', 'rightLittleProximal', 'rightLittleIntermediate', 'rightLittleDistal', '_rightLittle',],
+];
+function getTab(name: string) {
+  for (let i = 0; i < tabs.length; ++i) {
+    if (tabs[i].indexOf(name) != -1) {
+      return i;
+    }
+  }
+}
 
 // 6 _head
 // 5
@@ -104,70 +235,54 @@ class HeadUnit6 {
   }
 };
 
-// 6頭身
-//
-//  +-+     _head
-//  +-+0.5: head
-//   | 
-//  +-+0.5: neck
-//  +-+2/3: chest
-//  +-+2/3: spine
-//  +-+2/3: hips
-//    |1.5: upper
-//    o
-//    |1.0: lower
-//    |0.5: foot
-//    _   : _foot
-//
-
 interface MatrixMakerOption {
   isHand?: boolean;
   mod?: (pos: THREE.Vector3) => THREE.Vector3;
   offset?: THREE.Vector3;
 }
 
-class MatrixMaker {
-  constructor(public readonly option: MatrixMakerOption) {
-    if (this.option.mod && this.option.offset) {
-      this.option.offset = this.option.mod(this.option.offset);
-    }
-  }
-
-  makeMatrix(head: THREE.Vector3, tail: THREE.Vector3, width: number, depth: number) {
-    const m = new THREE.Matrix4();
-
-    if (this.option.mod) {
-      head = this.option.mod(head);
-      tail = this.option.mod(tail);
-    }
-
-    const y = new THREE.Vector3();
-    y.set(tail.x, tail.y, tail.z).sub(head);
-    const height = y.length();
-    y.normalize();
-    const z = this.option.isHand ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
-    const x = new THREE.Vector3(); x.crossVectors(y, z).normalize();
-    m.makeBasis(x, y, z);
-    m.scale(new THREE.Vector3(width, height, depth));
-    const pos = new THREE.Vector3(head.x, head.y, head.z);
-    if (this.option.offset) {
-      pos.add(this.option.offset);
-    }
-    m.setPosition(pos);
-    // console.log(head, tail, width, height, depth);
-    return m;
-  }
-}
-
-function makeGroup(color: number) {
-  const geometry = new THREE.BoxGeometry(1, 1, 1);
-  const material = new THREE.MeshStandardMaterial({ color });
-  const cube = new THREE.Mesh(geometry, material);
-  const group = new THREE.Group();
-  group.add(cube);
-  cube.position.set(0, 0.5, 0);
-  return group;
-}
+// class MatrixMaker {
+//   constructor(public readonly option: MatrixMakerOption) {
+//     if (this.option.mod && this.option.offset) {
+//       this.option.offset = this.option.mod(this.option.offset);
+//     }
+//   }
+//
+//   makeMatrix(head: THREE.Vector3, tail: THREE.Vector3, width: number, depth: number) {
+//     const m = new THREE.Matrix4();
+//
+//     if (this.option.mod) {
+//       head = this.option.mod(head);
+//       tail = this.option.mod(tail);
+//     }
+//
+//     const y = new THREE.Vector3();
+//     y.set(tail.x, tail.y, tail.z).sub(head);
+//     const height = y.length();
+//     y.normalize();
+//     const z = this.option.isHand ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(0, 0, 1);
+//     const x = new THREE.Vector3(); x.crossVectors(y, z).normalize();
+//     m.makeBasis(x, y, z);
+//     m.scale(new THREE.Vector3(width, height, depth));
+//     const pos = new THREE.Vector3(head.x, head.y, head.z);
+//     if (this.option.offset) {
+//       pos.add(this.option.offset);
+//     }
+//     m.setPosition(pos);
+//     // console.log(head, tail, width, height, depth);
+//     return m;
+//   }
+// }
+//
+// function makeGroup(color: number) {
+//   const geometry = new THREE.BoxGeometry(1, 1, 1);
+//   const material = new THREE.MeshStandardMaterial({ color });
+//   const cube = new THREE.Mesh(geometry, material);
+//   const group = new THREE.Group();
+//   group.add(cube);
+//   cube.position.set(0, 0.5, 0);
+//   return group;
+// }
 
 //     o
 //o----|----o
@@ -176,164 +291,27 @@ function makeGroup(color: number) {
 //    | |
 //    | |
 //
-//  +--+----
-//  +  +----
-// o+  +----
-//  +--+----
-//  +----
 
 class Humanoid {
-  position: { [key: string]: THREE.Vector3 };
+  // position: { [key: string]: THREE.Vector3 };
   tab: { [key: string]: number };
+  // hu: HeadUnit6;
 
-  constructor(public readonly height: number) {
-    const hu = new HeadUnit6(height);
-
-    const shoulderOffset = 0.5;
-    const fo = 0.02;
-    const lo = hu.units(0.5);
-    this.position = {
-      _head: new THREE.Vector3(0, hu.units(3.0 + 3.0), 0),
-      head: new THREE.Vector3(0, hu.units(3.0 + 2.5), 0),
-      neck: new THREE.Vector3(0, hu.units(3.0 + 2.0), 0),
-      chest: new THREE.Vector3(0, hu.units(3.0 + 4.0 / 3.0), 0),
-      spine: new THREE.Vector3(0, hu.units(3.0 + 2.0 / 3.0), 0),
-      hips: new THREE.Vector3(0, hu.units(3.0 + 0.0), 0),
-      // [legs]
-      leftUpperLeg: new THREE.Vector3(lo, hu.units(3.0 + 0.0), 0),
-      leftLowerLeg: new THREE.Vector3(lo, hu.units(3.0 + -1.5), 0),
-      leftFoot: new THREE.Vector3(lo, hu.units(3.0 + -2.5), 0),
-      _leftFoot: new THREE.Vector3(lo, hu.units(3.0 + -3.0), 0),
-      rightUpperLeg: new THREE.Vector3(-lo, hu.units(3.0 + 0.0), 0),
-      rightLowerLeg: new THREE.Vector3(-lo, hu.units(3.0 + -1.5), 0),
-      rightFoot: new THREE.Vector3(-lo, hu.units(3.0 + -2.5), 0),
-      _rightFoot: new THREE.Vector3(-lo, hu.units(3.0 + -3.0), 0),
-      // [arms]
-      leftUpperArm: new THREE.Vector3(hu.units(shoulderOffset + 0.0), hu.units(5.0), 0),
-      leftLowerArm: new THREE.Vector3(hu.units(shoulderOffset + 1.0), hu.units(5.0), 0),
-      leftHand: new THREE.Vector3(hu.units(shoulderOffset + 2.0), hu.units(5.0), 0),
-      _leftHand: new THREE.Vector3(hu.units(shoulderOffset + 2.3), hu.units(5.0), 0),
-      rightUpperArm: new THREE.Vector3(-hu.units(shoulderOffset + 0.0), hu.units(5.0), 0),
-      rightLowerArm: new THREE.Vector3(-hu.units(shoulderOffset + 1.0), hu.units(5.0), 0),
-      rightHand: new THREE.Vector3(-hu.units(shoulderOffset + 2.0), hu.units(5.0), 0),
-      _rightHand: new THREE.Vector3(-hu.units(shoulderOffset + 2.3), hu.units(5.0), 0),
-      // [left fingers]
-      leftThumbMetacarpal: new THREE.Vector3(hu.units(-5 * fo + 0), -fo, 2.5 * fo),
-      leftThumbProximal: new THREE.Vector3(hu.units(-5 * fo + 0.2), -fo, 2.5 * fo),
-      leftThumbDistal: new THREE.Vector3(hu.units(-5 * fo + 0.3), -fo, 2.5 * fo),
-      _leftThumbDistal: new THREE.Vector3(hu.units(-5 * fo + 0.4), -fo, 2.5 * fo),
-      leftIndexProximal: new THREE.Vector3(hu.units(0), 0, 1.5 * fo),
-      leftIndexIntermediate: new THREE.Vector3(hu.units(0.2), 0, 1.5 * fo),
-      leftIndexDistal: new THREE.Vector3(hu.units(0.3), 0, 1.5 * fo),
-      _leftIndexDistal: new THREE.Vector3(hu.units(0.4), 0, 1.5 * fo),
-      leftMiddleProximal: new THREE.Vector3(hu.units(0), 0, 0.5 * fo),
-      leftMiddleIntermediate: new THREE.Vector3(hu.units(0.2), 0, 0.5 * fo),
-      leftMiddleDistal: new THREE.Vector3(hu.units(0.3), 0, 0.5 * fo),
-      _leftMiddleDistal: new THREE.Vector3(hu.units(0.4), 0, 0.5 * fo),
-      leftRingProximal: new THREE.Vector3(hu.units(0), 0, -0.5 * fo),
-      leftRingIntermediate: new THREE.Vector3(hu.units(0.2), 0, -0.5 * fo),
-      leftRingDistal: new THREE.Vector3(hu.units(0.3), 0, -0.5 * fo),
-      _leftRingDistal: new THREE.Vector3(hu.units(0.4), 0, -0.5 * fo),
-      leftLittleProximal: new THREE.Vector3(hu.units(0), 0, -1.5 * fo),
-      leftLittleIntermediate: new THREE.Vector3(hu.units(0.2), 0, -1.5 * fo),
-      leftLittleDistal: new THREE.Vector3(hu.units(0.3), 0, -1.5 * fo),
-      _leftLittleDistal: new THREE.Vector3(hu.units(0.4), 0, -1.5 * fo),
-      // [right fingers]
-      rightThumbMetacarpal: new THREE.Vector3(-hu.units(-5 * fo + 0), -fo, 2.5 * fo),
-      rightThumbProximal: new THREE.Vector3(-hu.units(-5 * fo + 0.2), -fo, 2.5 * fo),
-      rightThumbDistal: new THREE.Vector3(-hu.units(-5 * fo + 0.3), -fo, 2.5 * fo),
-      _rightThumbDistal: new THREE.Vector3(-hu.units(-5 * fo + 0.4), -fo, 2.5 * fo),
-      rightIndexProximal: new THREE.Vector3(-hu.units(0), 0, 1.5 * fo),
-      rightIndexIntermediate: new THREE.Vector3(-hu.units(0.2), 0, 1.5 * fo),
-      rightIndexDistal: new THREE.Vector3(-hu.units(0.3), 0, 1.5 * fo),
-      _rightIndexDistal: new THREE.Vector3(-hu.units(0.4), 0, 1.5 * fo),
-      rightMiddleProximal: new THREE.Vector3(-hu.units(0), 0, 0.5 * fo),
-      rightMiddleIntermediate: new THREE.Vector3(-hu.units(0.2), 0, 0.5 * fo),
-      rightMiddleDistal: new THREE.Vector3(-hu.units(0.3), 0, 0.5 * fo),
-      _rightMiddleDistal: new THREE.Vector3(-hu.units(0.4), 0, 0.5 * fo),
-      rightRingProximal: new THREE.Vector3(-hu.units(0), 0, -0.5 * fo),
-      rightRingIntermediate: new THREE.Vector3(-hu.units(0.2), 0, -0.5 * fo),
-      rightRingDistal: new THREE.Vector3(-hu.units(0.3), 0, -0.5 * fo),
-      _rightRingDistal: new THREE.Vector3(-hu.units(0.4), 0, -0.5 * fo),
-      rightLittleProximal: new THREE.Vector3(-hu.units(0), 0, -1.5 * fo),
-      rightLittleIntermediate: new THREE.Vector3(-hu.units(0.2), 0, -1.5 * fo),
-      rightLittleDistal: new THREE.Vector3(-hu.units(0.3), 0, -1.5 * fo),
-      _rightLittleDistal: new THREE.Vector3(-hu.units(0.4), 0, -1.5 * fo),
-    };
-
-    this.tab = {
-      _head: 0,
-      head: 0,
-      neck: 0,
-      chest: 0,
-      spine: 0,
-      hips: 0,
-      // [legs]
-      leftUpperLeg: 1,
-      leftLowerLeg: 1,
-      leftFoot: 1,
-      _leftFoot: 1,
-      rightUpperLeg: 1,
-      rightLowerLeg: 1,
-      rightFoot: 1,
-      _rightFoot: 1,
-      // [arms]
-      leftUpperArm: 2,
-      leftLowerArm: 2,
-      leftHand: 2,
-      _leftHand: 2,
-      rightUpperArm: 2,
-      rightLowerArm: 2,
-      rightHand: 2,
-      _rightHand: 2,
-      // [left fingers]
-      leftThumbMetacarpal: 3,
-      leftThumbProximal: 3,
-      leftThumbDistal: 3,
-      _leftThumb: 3,
-      leftIndexProximal: 3,
-      leftIndexIntermediate: 3,
-      leftIndexDistal: 3,
-      _leftIndex: 3,
-      leftMiddleProximal: 3,
-      leftMiddleIntermediate: 3,
-      leftMiddleDistal: 3,
-      _leftMiddle: 3,
-      leftRingProximal: 3,
-      leftRingIntermediate: 3,
-      leftRingDistal: 3,
-      _leftRing: 3,
-      leftLittleProximal: 3,
-      leftLittleIntermediate: 3,
-      leftLittleDistal: 3,
-      _leftLittle: 3,
-      // [right fingers]
-      rightThumbMetacarpal: 4,
-      rightThumbProximal: 4,
-      rightThumbDistal: 4,
-      _rightThumb: 4,
-      rightIndexProximal: 4,
-      rightIndexIntermediate: 4,
-      rightIndexDistal: 4,
-      _rightIndex: 4,
-      rightMiddleProximal: 4,
-      rightMiddleIntermediate: 4,
-      rightMiddleDistal: 4,
-      _rightMiddle: 4,
-      rightRingProximal: 4,
-      rightRingIntermediate: 4,
-      rightRingDistal: 4,
-      _rightRing: 4,
-      rightLittleProximal: 4,
-      rightLittleIntermediate: 4,
-      rightLittleDistal: 4,
-      _rightLittle: 4,
-    }
+  constructor(
+    public readonly values: { [key: string]: BoneSize },
+    public readonly height: number,
+  ) {
+    // this.hu = new HeadUnit6(height);
+    // const shoulderOffset = 0.5;
+    // const fo = 0.02;
+    // const lo = this.hu.units(0.5);
+    // this.position = {
+    // };
   }
-
-  widthDepth(name: string): [number, number] {
-    return [0.1, 0.1]
-  }
+  //
+  // widthDepth(name: string): [number, number] {
+  //   return [0.1, 0.1]
+  // }
 }
 
 class MeshBuilder {
@@ -399,41 +377,61 @@ class MeshBuilder {
     }
   }
 
-  position(name: string): THREE.Vector3 {
-    const pos = this.humanoid.position[name];
-    if (!pos) {
-      throw `"${name}" not found`;
+  getSize(name: string): BoneSize {
+    if (name.startsWith("left")) {
+      return this.humanoid.values[name.substring(4)];
     }
-    return pos;
+    else if (name.startsWith("right")) {
+      return this.humanoid.values[name.substring(5)];
+    }
+    else {
+      return this.humanoid.values[name];
+    }
   }
 
-  getMatrix(head: HumanBone, tail: string): THREE.Matrix4 {
-    const mm = new MatrixMaker({});
-    const m = mm.makeMatrix(
-      this.position(head.name),
-      this.position(tail),
-      ...head.widthDepth);
-    return m;
-  }
+  traverse(bone: HumanBone, parent?: THREE.Vector3) {
+    const value = this.getSize(bone.name);
 
-  traverse(bone: HumanBone) {
-    if (bone.children) {
-      for (let i = 0; i < bone.children.length; ++i) {
-        const child = bone.children[i];
-        const childName = child instanceof HumanBone ? child.name : child;
-        if (i == 0) {
-          const m = this.getMatrix(bone, childName);
-          this.addCube(bone.name, m);
+    // head
+    const head =
+      (parent)
+        ? new THREE.Vector3(parent.x, parent.y, parent.z)
+        : new THREE.Vector3(0, 3/*this.humanoid.height / 2, 0*/)
+      ;
+    if (value.offset) {
+      if (bone.name.startsWith("right")) {
+        head.add(new THREE.Vector3(-value.offset.x, value.offset.y, value.offset.z));
+      }
+      else {
+        head.add(value.offset);
+      }
+    }
+    console.log(bone.name, head);
 
-          const page = this.humanoid.tab[bone.name]
+    // TRS
+    const m = new THREE.Matrix4();
+    const t = new THREE.Matrix4();
+    t.makeTranslation(head);
+    const r = bone.rotation()
+    const s = value.scale();
+    m.multiplyMatrices(t, r);
+    m.multiply(s);
+    this.addCube(bone.name, m);
 
-          // console.log(parent.name, '=>', page);
-          this.tab.pages[page].addFolder({ title: bone.name });
-        }
+    // page
+    const page = getTab(bone.name);
+    this.tab.pages[page].addFolder({ title: bone.name });
 
-        if (child instanceof HumanBone) {
-          this.traverse(child);
-        }
+    const tail = new THREE.Vector3(0, value.len, 0);
+    tail.applyMatrix4(r);
+    tail.add(head);
+    for (let i = 0; i < bone.children.length; ++i) {
+      const child = bone.children[i];
+      if (this.getSize(child.name).offset) {
+        this.traverse(child, head);
+      }
+      else {
+        this.traverse(child, tail);
       }
     }
   }
@@ -471,8 +469,7 @@ function World() {
       ],
     });
 
-    const builder = new MeshBuilder(new Humanoid(1.6), tab);
-
+    const builder = new MeshBuilder(new Humanoid(values, 1.6), tab);
     builder.traverse(hierarchy);
 
     const geometry = builder.build();
