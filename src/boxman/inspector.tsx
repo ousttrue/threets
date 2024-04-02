@@ -2,10 +2,11 @@ import React from 'react';
 import * as THREE from "three";
 import { Pane } from "tweakpane";
 let pane: Pane | null = null;
+import './inspector.css';
 
-let b = null;
+const binds = [];
 
-export function Inspector({ selected }: { selected: THREE.Object3D }) {
+export function Inspector({ selected, invalidate }: { selected: THREE.Object3D, invalidate: number }) {
 
   const ref = React.useRef();
 
@@ -17,16 +18,25 @@ export function Inspector({ selected }: { selected: THREE.Object3D }) {
       });
     }
 
-    if (b) {
+    for (const b of binds) {
       pane.remove(b);
-      b = null;
     }
+    binds.splice(0);
 
     if (selected) {
       pane.title = selected.name;
-      b = pane.addBinding(selected, "position")
+      binds.push(pane.addBinding(selected, "position"));
+      binds.push(pane.addBinding(selected, "rotation"));
+      binds.push(pane.addBinding(selected, "scale"));
     }
   }, [selected]);
+
+  React.useEffect(() => {
+    // console.log('refresh', invalidate);
+    if (pane) {
+      pane.refresh();
+    }
+  }, [invalidate]);
 
 
   return (<div ref={ref}></div>);

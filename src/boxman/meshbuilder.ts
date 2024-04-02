@@ -380,17 +380,32 @@ export class MeshBuilder {
     tail.applyMatrix4(r);
     tail.add(head);
 
+    const inverse = t_bone.matrix.clone();
+    inverse.invert();
+
     for (let i = 0; i < bone.children.length; ++i) {
       const child = bone.children[i];
 
+      let node: THREE.Object3D;
       if (this.getSize(child.name).offset) {
-        const node = this.traverse(child, head);
-        // t_bone.add(node);
+        node = this.traverse(child, head);
       }
       else {
-        const node = this.traverse(child, tail);
-        // t_bone.add(node);
+        node = this.traverse(child, tail);
       }
+
+      const d = new THREE.Vector3();
+      d.subVectors(node.position, t_bone.position);
+      node.position.set(d.x, d.y, d.z);
+      node.rotation.set(0, 0, 0);
+
+      // const local = new THREE.Matrix4();
+      // local.multiplyMatrices(inverse, node.matrix);
+      // node.applyMatrix4(local);
+
+      t_bone.add(node);
+
+      node.updateMatrixWorld();
     }
 
     return t_bone;
@@ -421,10 +436,10 @@ export class MeshBuilder {
     const mesh = new THREE.SkinnedMesh(this.buildMesh(), material);
     mesh.name = 'mesh'
 
-    // root.add(this.bones[0]);
+    mesh.add(this.bones[0]);
     const boneInverses: THREE.Matrix4[] = [];
     for (const bone of this.bones) {
-      mesh.add(bone);
+      // mesh.add(bone);
       const i = bone.matrixWorld.clone();
       i.invert();
       // const i = new THREE.Matrix4();

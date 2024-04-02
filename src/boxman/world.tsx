@@ -4,14 +4,27 @@ import { useThree } from "@react-three/fiber";
 import { OrbitControls, Grid } from "@react-three/drei";
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
-export function World({ root, selected }: { root?: THREE.Object3D, selected?: THREE.Object3D }) {
+const roots = [];
+
+export function World({
+  root,
+  selected,
+  setInvalidate,
+}: {
+  root?: THREE.Object3D,
+  selected?: THREE.Object3D,
+  setInvalidate: Function,
+}) {
   const { scene, camera, gl } = useThree();
 
   // scene.clear();
-  console.log(root);
-  if (root) {
-    scene.add(root);
+  // console.log(root);
+  for (const root of roots) {
+    scene.remove(root);
   }
+  roots.splice(0);
+  scene.add(root);
+  roots.push(root);
 
   const orbitControlsRef = React.useRef(null);
   const [transControls, setTransControls] = React.useState(null);
@@ -26,6 +39,12 @@ export function World({ root, selected }: { root?: THREE.Object3D, selected?: TH
         t.space = 'local';
         t.addEventListener('dragging-changed', event => {
           orbitControlsRef.current.enabled = !event.value;
+        });
+
+        let frame = [1];
+        t.addEventListener('change', e => {
+          ;
+          setInvalidate(++frame[0]);
         });
         scene.add(t);
         setTransControls(t);

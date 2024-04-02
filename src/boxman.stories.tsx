@@ -20,6 +20,7 @@ const fingerSize: [number, number] = [0.1, 0.1];
 export function BoxMan() {
   const [root, setRoot] = React.useState<THREE.Object3D>(null);
   const [selected, setSelected] = React.useState<THREE.Object3D>(null);
+  const [invalidate, setInvalidate] = React.useState(1);
 
   React.useEffect(() => {
     // const tab = pane.addTab({
@@ -56,14 +57,20 @@ export function BoxMan() {
           {/* nazo */}
         </div>
         <Canvas>
-          <World root={root} selected={selected} />
+          <World root={root} selected={selected} setInvalidate={setInvalidate} />
         </Canvas>
       </div>
 
       <div>
-        <Inspector selected={selected} />
+        <Inspector selected={selected} invalidate={invalidate} />
       </div>
 
     </Split>
   );
 }
+
+export default {
+  meta: {
+    hotkeys: false,
+  },
+};
