@@ -6,6 +6,7 @@ import "react-complex-tree/lib/style-modern.css";
 import * as THREE from "three";
 import { World } from './boxman/world';
 import { SceneTree } from './boxman/tree';
+import { Inspector } from './boxman/inspector';
 import { MeshBuilder, values, hierarchy } from './boxman/meshbuilder';
 
 
@@ -57,6 +58,10 @@ export function BoxMan() {
         <Canvas>
           <World root={root} selected={selected} />
         </Canvas>
+      </div>
+
+      <div>
+        <Inspector selected={selected} />
       </div>
 
     </Split>

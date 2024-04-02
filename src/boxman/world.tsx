@@ -1,11 +1,8 @@
 import React from "react";
-import { Pane } from "tweakpane";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { OrbitControls, Grid } from "@react-three/drei";
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
-
-let pane: Pane | null = null;
 
 export function World({ root, selected }: { root?: THREE.Object3D, selected?: THREE.Object3D }) {
   const { scene, camera, gl } = useThree();
@@ -21,12 +18,6 @@ export function World({ root, selected }: { root?: THREE.Object3D, selected?: TH
 
   React.useEffect(() => {
     if (selected) {
-      pane = new Pane({
-        // container: container!,
-        title: "BoxMan",
-      });
-      pane.addBinding(selected, "position")
-
       if (transControls) {
         transControls.attach(selected);
       }
