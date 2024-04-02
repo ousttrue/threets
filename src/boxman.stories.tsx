@@ -1,5 +1,6 @@
 import React from "react";
 import { Canvas } from "@react-three/fiber";
+import { Stats } from '@react-three/drei'
 import Split from 'react-split';
 import './split.css';
 import "react-complex-tree/lib/style-modern.css";
@@ -46,10 +47,16 @@ export function BoxMan() {
   return (
     <Split
       className="split"
-      style={{ height: '100%' }}
+      style={{
+        height: '100%',
+      }}
     >
-      <div>
-        <SceneTree root={root} setSelected={setSelected} />
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div id="x" style={{ 'height': '50px' }}>
+        </div>
+        <div>
+          <SceneTree root={root} setSelected={setSelected} />
+        </div>
       </div>
 
       <div>
@@ -57,11 +64,14 @@ export function BoxMan() {
           {/* nazo */}
         </div>
         <Canvas>
+          <Stats />
           <World root={root} selected={selected} setInvalidate={setInvalidate} />
         </Canvas>
       </div>
 
-      <div>
+      <div
+        style={{ backgroundColor: 'hsl(230, 7%, 17%))' }}
+      >
         <Inspector selected={selected} invalidate={invalidate} />
       </div>
 

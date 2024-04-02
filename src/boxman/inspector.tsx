@@ -1,9 +1,10 @@
 import React from 'react';
 import * as THREE from "three";
 import { Pane } from "tweakpane";
-let pane: Pane | null = null;
+import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 import './inspector.css';
 
+let pane: Pane | null = null;
 const binds = [];
 
 export function Inspector({ selected, invalidate }: { selected: THREE.Object3D, invalidate: number }) {
@@ -16,6 +17,13 @@ export function Inspector({ selected, invalidate }: { selected: THREE.Object3D, 
         container: ref.current,
         title: "BoxMan",
       });
+      pane.registerPlugin(EssentialsPlugin);
+
+      // const fpsGraph = pane.addBlade({
+      //   view: 'fpsgraph',
+      //   label: 'fpsgraph',
+      //   rows: 2,
+      // });
     }
 
     for (const b of binds) {
@@ -39,5 +47,9 @@ export function Inspector({ selected, invalidate }: { selected: THREE.Object3D, 
   }, [invalidate]);
 
 
-  return (<div ref={ref}></div>);
+  return (
+    <div
+      ref={ref}>
+    </div>
+  );
 }
