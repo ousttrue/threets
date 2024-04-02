@@ -34,18 +34,11 @@ export function BoxMan() {
     //   ],
     // });
 
-    const root = new THREE.Group();
-    root.name = '__root__';
 
     const builder = new MeshBuilder(1.6, values);
-    const hips = builder.traverse(hierarchy);
-    root.add(hips);
+    /*const hips =*/ builder.traverse(hierarchy);
 
-    const geometry = builder.build();
-    const material = new THREE.MeshStandardMaterial({ color: darkGreen });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.name = 'mesh'
-    root.add(mesh);
+    const root = builder.buildSkeleton(darkGreen);
 
     setRoot(root);
 

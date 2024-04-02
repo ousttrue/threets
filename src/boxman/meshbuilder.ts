@@ -257,6 +257,7 @@ export class MeshBuilder {
   normals: THREE.Vector3[] = [];
   // per cube
   skinIndices: number[] = [];
+  bones: THREE.Bone[] = [];
 
   prefix: string = '';
 
@@ -294,7 +295,11 @@ export class MeshBuilder {
   //
   // add 24 vertices(vertex normal)
   // add 12 triangles
-  addCube(m: THREE.Matrix4) {
+  addCube(name: string, m: THREE.Matrix4) {
+    const boneIndex = this.bones.map(o => o.name).indexOf(name);
+    console.assert(boneIndex != -1, 'boneIndex', name);
+    this.skinIndices.push(boneIndex);
+
     const positions = [
       // +z
       new THREE.Vector3(-0.5, 0.0, 0.5).applyMatrix4(m),
@@ -333,9 +338,10 @@ export class MeshBuilder {
   }
 
   traverse(bone: HumanBone, parent?: THREE.Vector3): THREE.Object3D {
-    const group = new THREE.Group();
+    const t_bone = new THREE.Bone();
     const value = this.getSize(bone.name);
-    group.name = bone.name
+    t_bone.name = bone.name
+    this.bones.push(t_bone);
 
     // head
     const head =
@@ -357,14 +363,14 @@ export class MeshBuilder {
     const m = new THREE.Matrix4();
     const t = new THREE.Matrix4();
     t.makeTranslation(head);
+
     const r = bone.rotation()
     const s = value.scale();
     m.multiplyMatrices(t, r);
-
-    group.applyMatrix4(m);
+    t_bone.applyMatrix4(m);
 
     m.multiply(s);
-    this.addCube(m);
+    this.addCube(bone.name, m);
 
     // page
     // const page = getTab(bone.name);
@@ -373,22 +379,24 @@ export class MeshBuilder {
     const tail = new THREE.Vector3(0, value.len, 0);
     tail.applyMatrix4(r);
     tail.add(head);
+
     for (let i = 0; i < bone.children.length; ++i) {
       const child = bone.children[i];
+
       if (this.getSize(child.name).offset) {
         const node = this.traverse(child, head);
-        group.add(node);
+        // t_bone.add(node);
       }
       else {
         const node = this.traverse(child, tail);
-        group.add(node);
+        // t_bone.add(node);
       }
     }
 
-    return group;
+    return t_bone;
   }
 
-  build(): THREE.BufferGeometry {
+  buildMesh(): THREE.BufferGeometry {
     const g = new THREE.BufferGeometry();
     g.setIndex(this.indices);
 
@@ -398,6 +406,39 @@ export class MeshBuilder {
     const normal = new Float32Array(this.normals.map(v => [v.toArray(), v.toArray(), v.toArray(), v.toArray()].flat()).flat());
     g.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
 
+    // skinning
+    const skinIndices = new Uint16Array(this.positions.map((_, i) => [i / 24, 0, 0, 0]).flat());
+    const skinWeights = new Float32Array(this.positions.map(_ => [1, 0, 0, 0]).flat());
+    g.setAttribute('skinIndex', new THREE.BufferAttribute(skinIndices, 4));
+    g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWeights, 4));
+
     return g;
+  }
+
+  buildSkeleton(color: number): THREE.Object3D {
+    const root = new THREE.Group();
+    root.name = '__root__';
+
+    // mesh
+    const material = new THREE.MeshStandardMaterial({ color });
+    const mesh = new THREE.SkinnedMesh(this.buildMesh(), material);
+    mesh.name = 'mesh'
+    root.add(mesh);
+
+    // root.add(this.bones[0]);
+    const boneInverses: THREE.Matrix4[] = [];
+    for (const bone of this.bones) {
+      mesh.add(bone);
+      const i = bone.matrixWorld.clone();
+      i.invert();
+      // const i = new THREE.Matrix4();
+      // i.identity();
+      boneInverses.push(i);
+    }
+
+    const skeleton = new THREE.Skeleton(this.bones, boneInverses);
+    mesh.bind(skeleton);
+
+    return root;
   }
 }
