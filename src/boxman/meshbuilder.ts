@@ -416,14 +416,10 @@ export class MeshBuilder {
   }
 
   buildSkeleton(color: number): THREE.Object3D {
-    const root = new THREE.Group();
-    root.name = '__root__';
-
     // mesh
     const material = new THREE.MeshStandardMaterial({ color });
     const mesh = new THREE.SkinnedMesh(this.buildMesh(), material);
     mesh.name = 'mesh'
-    root.add(mesh);
 
     // root.add(this.bones[0]);
     const boneInverses: THREE.Matrix4[] = [];
@@ -439,6 +435,6 @@ export class MeshBuilder {
     const skeleton = new THREE.Skeleton(this.bones, boneInverses);
     mesh.bind(skeleton);
 
-    return root;
+    return mesh;
   }
 }

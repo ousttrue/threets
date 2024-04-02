@@ -17,8 +17,6 @@ const fingerSize: [number, number] = [0.1, 0.1];
 
 
 export function BoxMan() {
-  const ref = React.useRef(null);
-
   const [root, setRoot] = React.useState<THREE.Object3D>(null);
   const [selected, setSelected] = React.useState<THREE.Object3D>(null);
 
@@ -33,7 +31,6 @@ export function BoxMan() {
     //     { title: 'selected' },
     //   ],
     // });
-
 
     const builder = new MeshBuilder(1.6, values);
     /*const hips =*/ builder.traverse(hierarchy);
@@ -55,12 +52,13 @@ export function BoxMan() {
 
       <div>
         <div style={{ display: "flex" }}>
-          <div ref={ref}></div>
+          {/* nazo */}
         </div>
         <Canvas>
           <World root={root} selected={selected} />
         </Canvas>
       </div>
+
     </Split>
   );
 }

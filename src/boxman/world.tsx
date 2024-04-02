@@ -53,8 +53,6 @@ export function World({ root, selected }: { root?: THREE.Object3D, selected?: TH
           }
         });
       }
-      // transControls.addEventListener('change', tick);
-
     }
   }, [selected]);
 
