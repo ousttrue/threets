@@ -75,6 +75,7 @@ export function World({
       <directionalLight position={[10, 10, 5]} />
       <OrbitControls ref={orbitControlsRef} makeDefault />
       <Grid cellColor="white" args={[10, 10]} />
+      <axesHelper />
     </>
   );
 }
