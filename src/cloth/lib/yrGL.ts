@@ -15,7 +15,7 @@ var __MAX_VERTEX_TEXTURE_IMAGE_UNITS__ = 0;	//
 
 // -------------------------------------------------------------------------------------------
 // レンダラー
-class yrGLRenderer {
+export class yrGLRenderer {
   constructor(public readonly _gl: WebGL2RenderingContext) {
 
     /* ↓とりあえずの初期設定、変更はご自由に */
@@ -38,7 +38,7 @@ class yrGLRenderer {
   }
 
   // ビューポートをセットする（デフォだとcanvasに合わさっている）
-  setViewport(x, y, w, h) {
+  setViewport(x: number, y: number, w: number, h: number) {
     this._gl.viewport(x, y, w, h);
   }
 
@@ -178,17 +178,12 @@ class yrGLRenderer {
       this._gl.disableVertexAttribArray(attls[i]);
     }
   }
-
-  // バッファリングされたWebGLコマンドをただちに実行する
-  flush() {
-    this._gl.flush();
-  }
 }
 
 
 // -------------------------------------------------------------------------------------------
 // マテリアル
-class yrGLMaterial {
+export class yrGLMaterial {
   constructor(gl, vs_str, fs_str) {
     this._gl = gl;
     this._vs = this.createShader(vs_str, this._gl.VERTEX_SHADER);
@@ -958,5 +953,9 @@ export class yrGL {
 
       document.getElementById(debug).innerHTML += str;
     }
+  }
+
+  flush() {
+    this._gl.flush();
   }
 }
