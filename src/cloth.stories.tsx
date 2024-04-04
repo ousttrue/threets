@@ -6,8 +6,9 @@ import { vs_constant, fs_constant } from './cloth/lib/constant';
 import { yrTimer } from './cloth/lib/yrTimer';
 import { yrInput } from './cloth/lib/yrInput';
 import { yrCamera } from './cloth/lib/yrCamera';
-import { Cloth } from './cloth/cloth';
+import { Cloth, InputState } from './cloth/cloth';
 import { mat4, vec4 } from 'gl-matrix';
+import { Stats } from '@react-three/drei'
 
 const GL = WebGL2RenderingContext;
 
@@ -33,16 +34,6 @@ class State {
   reset = true;				// リセット
   div = 0;					// 質点分割数
   relaxation = 0;				// 制約充足の反復回数
-  g = 0.0;					// 重力
-  w = 0.0;					// 風力
-  r = 0.0;					// 抵抗
-  k = 0.0;					// 制約バネの特性（基本強度）
-  structural_shrink = 0.0;	// 制約バネの特性（構成バネの伸び抵抗）
-  structural_stretch = 0.0;	// 制約バネの特性（構成バネの縮み抵抗）
-  shear_shrink = 0.0;			// 制約バネの特性（せん断バネの伸び抵抗）
-  shear_stretch = 0.0;		// 制約バネの特性（せん断バネの縮み抵抗）
-  bending_shrink = 0.0;		// 制約バネの特性（曲げバネの伸び抵抗）
-  bending_stretch = 0.0;		// 制約バネの特性（曲げバネの縮み抵抗）
   collision = false;			// 球との衝突判定
 
   constructor(_gl: WebGL2RenderingContext, element: HTMLElement) {
@@ -62,7 +53,7 @@ class State {
     this.input = new yrInput(element);
   }
 
-  onFrame() {
+  onFrame(inputState: InputState) {
     // UI（ボタンやスライダーなど）の取得
     for (let i = 0; i < document.form_ui.div.length; i++) {
       if (document.form_ui.div[i].checked) {
@@ -79,16 +70,16 @@ class State {
       }
     }
 
-    this.g = parseFloat(document.form_ui.g.value);
-    this.w = parseFloat(document.form_ui.w.value);
-    this.r = parseFloat(document.form_ui.r.value);
-    this.k = parseFloat(document.form_ui.k.value);
-    this.structural_shrink = parseFloat(document.form_ui.structural_shrink.value);
-    this.structural_stretch = parseFloat(document.form_ui.structural_stretch.value);
-    this.shear_shrink = parseFloat(document.form_ui.shear_shrink.value);
-    this.shear_stretch = parseFloat(document.form_ui.shear_stretch.value);
-    this.bending_shrink = parseFloat(document.form_ui.bending_shrink.value);
-    this.bending_stretch = parseFloat(document.form_ui.bending_stretch.value);
+    // this.g = parseFloat(document.form_ui.g.value);
+    // this.w = parseFloat(document.form_ui.w.value);
+    // this.r = parseFloat(document.form_ui.r.value);
+    // this.k = parseFloat(document.form_ui.k.value);
+    // this.structural_shrink = parseFloat(document.form_ui.structural_shrink.value);
+    // this.structural_stretch = parseFloat(document.form_ui.structural_stretch.value);
+    // this.shear_shrink = parseFloat(document.form_ui.shear_shrink.value);
+    // this.shear_stretch = parseFloat(document.form_ui.shear_stretch.value);
+    // this.bending_shrink = parseFloat(document.form_ui.bending_shrink.value);
+    // this.bending_stretch = parseFloat(document.form_ui.bending_stretch.value);
     this.collision = document.form_ui.collision.checked;
 
     // タイマー更新
@@ -122,7 +113,13 @@ class State {
       // 大きなタイムステップでシミュレーションを実行すると精度の問題で破綻が生じるため、
       // フレームの差分時間を固定のシミュレーションタイムステップで分割し、複数回処理する。
       // 余剰時間は次のフレームに持ち越す。
-      this.update(ms_step / 1000.0, this.ms_acc / 1000.0);
+      this.cloth.update(
+        ms_step / 1000.0, 				// タイムステップ（秒）
+        this.ms_acc / 1000.0, 				// 累積時間（秒）
+        this.relaxation, 		// 制約充足の反復回数
+        this.collision,			// 球との衝突判定
+        inputState,
+      );
 
       this.ms_acc += ms_step;
       ms_delta -= ms_step;
@@ -136,22 +133,6 @@ class State {
   }
 
   update(step: number, acc: number) {
-    this.cloth.update(
-      step, 				// タイムステップ（秒）
-      acc, 				// 累積時間（秒）
-      this.relaxation, 		// 制約充足の反復回数
-      this.g, 					// 重力
-      this.w, 					// 風力
-      this.r, 					// 抵抗
-      this.k, 					// 制約バネの特性（基本強度）
-      this.structural_shrink,	// 制約バネの特性（構成バネの伸び抵抗）
-      this.structural_stretch,	// 制約バネの特性（構成バネの縮み抵抗）
-      this.shear_shrink,		// 制約バネの特性（せん断バネの伸び抵抗）
-      this.shear_stretch,		// 制約バネの特性（せん断バネの縮み抵抗）
-      this.bending_shrink,		// 制約バネの特性（曲げバネの伸び抵抗）
-      this.bending_stretch,	// 制約バネの特性（曲げバネの縮み抵抗）
-      this.collision			// 球との衝突判定
-    );
   }
 
   // 描画
@@ -181,7 +162,7 @@ class State {
   }
 }
 
-function Render() {
+function Render({ inputState }: { inputState: InputState }) {
   const [state, setState] = React.useState<State>(null);
   useFrame(({ gl, clock }, delta) => {
     if (!state) {
@@ -190,15 +171,27 @@ function Render() {
     }
     else {
       // render
-      state.onFrame();
+      state.onFrame(inputState);
     }
   }, 1)
 
-  return <></>
+  return <Stats />
 }
 
 
 export function ClothSimulation() {
+  const [inputState, setInputState] = React.useState<InputState>({
+    g: 7.0,					// 重力
+    w: 7.5,					// 風力
+    r: 0.2,					// 抵抗
+    k: 3000.0,					// 制約バネの特性（基本強度）
+    structural_shrink: 1.0,	// 制約バネの特性（構成バネの伸び抵抗）
+    structural_stretch: 1.0,	// 制約バネの特性（構成バネの縮み抵抗）
+    shear_shrink: 1.0,			// 制約バネの特性（せん断バネの伸び抵抗）
+    shear_stretch: 1.0,		// 制約バネの特性（せん断バネの縮み抵抗）
+    bending_shrink: 1.0,		// 制約バネの特性（曲げバネの伸び抵抗）
+    bending_stretch: 0.5,		// 制約バネの特性（曲げバネの縮み抵抗）
+  });
 
   return (<div id="main">
     <h1>Cloth Simulation</h1>
@@ -207,25 +200,25 @@ export function ClothSimulation() {
     >
     <div style={{ width: "512px", height: "512px" }} >
       <Canvas >
-        <Render />
+        <Render inputState={inputState} />
       </Canvas>
     </div>
     <form name="form_ui" style={{ fontSize: "14px" }}>
       左ドラッグまたはスワイプ操作でカメラを回転させることができます。
       <br />
       <br />
-      <input type="button" value="リセット" onClick="button_reset()" />
+      <input type="button" value="リセット" onClick={() => { }} />
       <br />
       <br />
       ■質点分割数（低負荷→高負荷）
       <br />
       <input type="radio" name="div" value="15" />15
-      <input type="radio" name="div" value="31" checked="checked" />31
+      <input type="radio" name="div" value="31" defaultChecked />31
       <br />
       ■制約充足の反復回数（低負荷→高負荷）
       <br />
       <input type="radio" name="relaxation" value="1" />1
-      <input type="radio" name="relaxation" value="2" checked="checked" />2
+      <input type="radio" name="relaxation" value="2" defaultChecked />2
       <input type="radio" name="relaxation" value="3" />3
       <input type="radio" name="relaxation" value="4" />4
       <input type="radio" name="relaxation" value="5" />5
@@ -239,7 +232,8 @@ export function ClothSimulation() {
         min="0.0"
         max="9.8"
         step="0.1"
-        value="7.0"
+        value={inputState.g}
+        onChange={e => setInputState({ ...inputState, g: parseFloat(e.target.value) })}
       />
       <br />
       ■風力（弱→強）
@@ -250,7 +244,8 @@ export function ClothSimulation() {
         min="0.0"
         max="20.0"
         step="0.1"
-        value="7.5"
+        value={inputState.w}
+        onChange={e => setInputState({ ...inputState, w: parseFloat(e.target.value) })}
       />
       <br />
       ■抵抗（弱→強）
@@ -261,7 +256,8 @@ export function ClothSimulation() {
         min="0.0"
         max="2.0"
         step="0.01"
-        value="0.2"
+        value={inputState.r}
+        onChange={e => setInputState({ ...inputState, r: parseFloat(e.target.value) })}
       />
       <br />
       ■制約バネの特性
@@ -272,7 +268,8 @@ export function ClothSimulation() {
         min="0.0"
         max="5000.0"
         step="10.0"
-        value="3000.0"
+        value={inputState.k}
+        onChange={e => setInputState({ ...inputState, k: parseFloat(e.target.value) })}
       />　基本強度（弱→強）
       <br />
       <input
@@ -281,7 +278,8 @@ export function ClothSimulation() {
         min="0.0"
         max="1.0"
         step="0.01"
-        value="1.0"
+        value={inputState.structural_shrink}
+        onChange={e => setInputState({ ...inputState, structural_shrink: parseFloat(e.target.value) })}
       />　構成バネの伸び抵抗（弱→強）
       <br />
       <input
@@ -290,7 +288,8 @@ export function ClothSimulation() {
         min="0.0"
         max="1.0"
         step="0.01"
-        value="1.0"
+        value={inputState.structural_stretch}
+        onChange={e => setInputState({ ...inputState, structural_stretch: parseFloat(e.target.value) })}
       />　構成バネの縮み抵抗（弱→強）
       <br />
       <input
@@ -299,7 +298,8 @@ export function ClothSimulation() {
         min="0.0"
         max="1.0"
         step="0.01"
-        value="1.0"
+        value={inputState.shear_shrink}
+        onChange={e => setInputState({ ...inputState, shear_shrink: parseFloat(e.target.value) })}
       />　せん断バネの伸び抵抗（弱→強）
       <br />
       <input
@@ -308,7 +308,8 @@ export function ClothSimulation() {
         min="0.0"
         max="1.0"
         step="0.01"
-        value="1.0"
+        value={inputState.shear_stretch}
+        onChange={e => setInputState({ ...inputState, shear_stretch: parseFloat(e.target.value) })}
       />　せん断バネの縮み抵抗（弱→強）
       <br />
       <input
@@ -317,7 +318,8 @@ export function ClothSimulation() {
         min="0.0"
         max="1.0"
         step="0.01"
-        value="1.0"
+        value={inputState.bending_shrink}
+        onChange={e => setInputState({ ...inputState, bending_shrink: parseFloat(e.target.value) })}
       />　曲げバネの伸び抵抗（弱→強）
       <br />
       <input
@@ -326,12 +328,13 @@ export function ClothSimulation() {
         min="0.0"
         max="1.0"
         step="0.01"
-        value="0.5"
+        value={inputState.bending_stretch}
+        onChange={e => setInputState({ ...inputState, bending_stretch: parseFloat(e.target.value) })}
       />　曲げバネの縮み抵抗（弱→強）
       <br />
       ■球との衝突判定
       <br />
-      <input type="checkbox" name="collision" value="0" checked="checked" />
+      <input type="checkbox" name="collision" value="0" defaultChecked />
     </form>
   </div >);
 }

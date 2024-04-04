@@ -26,6 +26,18 @@ class ClothConstraint {
   }
 }
 
+export interface InputState {
+  g: number;					// 重力
+  w: number;					// 風力
+  r: number;					// 抵抗
+  k: number;					// 制約バネの特性（基本強度）
+  structural_shrink: number;	// 制約バネの特性（構成バネの伸び抵抗）
+  structural_stretch: number;	// 制約バネの特性（構成バネの縮み抵抗）
+  shear_shrink: number;			// 制約バネの特性（せん断バネの伸び抵抗）
+  shear_stretch: number;		// 制約バネの特性（せん断バネの縮み抵抗）
+  bending_shrink: number;		// 制約バネの特性（曲げバネの伸び抵抗）
+  bending_stretch: number;		// 制約バネの特性（曲げバネの縮み抵抗）
+};
 
 // -------------------------------------------------------------------------------------------
 // Simple Cloth
@@ -116,12 +128,22 @@ export class Cloth {
   }
 
   // 更新
-  update(step, acc, relaxation,
-    g, w, r, k,
-    structural_shrink, structural_stretch,
-    shear_shrink, shear_stretch,
-    bending_shrink, bending_stretch,
-    collision) {
+  update(step: number, acc: number,
+    relaxation: number, collision: boolean,
+    inputState: InputState
+  ) {
+    let {
+      g,
+      w,
+      r,
+      k,
+      structural_shrink,
+      structural_stretch,
+      shear_shrink,
+      shear_stretch,
+      bending_shrink,
+      bending_stretch,
+    } = inputState;
     // 質点の質量は質点分割数にかかわらず1.0固定とします
     // ただ、これだと質点分割数によって布のトータル質量が変わってしまうので、力に質量をかけて相殺しておきます
     // 実質、この実装では質量が意味をなしていないのでmは不要ですが、見通しのため残しておきます
