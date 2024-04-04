@@ -5,7 +5,7 @@
 
 // ------------------------------------------------------------------------------------------------
 // 頂点シェーダー
-var vs_constant = `
+export const vs_constant = `
 attribute vec3 a_position;
 uniform mat4 u_wvp;
 
@@ -18,7 +18,7 @@ void main()
 
 // ------------------------------------------------------------------------------------------------
 // フラグメントシェーダー
-var fs_constant = `
+export const fs_constant = `
 /*precision mediump float;*/
 precision highp float;
 

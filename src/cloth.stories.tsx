@@ -1,13 +1,71 @@
+import React from "react";
 import './cloth/common.css';
-// "main.ts"></script>
-// "cloth.ts"></script>
-// "./lib/yrGL.ts"></script>
-// "./lib/yrUtil.ts"></script>
-// "./lib/yrTimer.ts"></script>
-// "./lib/yrInput.ts"></script>
-// "./lib/yrCamera.ts"></script>
-// "./lib/gl-matrix-min.js"></script>
-// "./lib/constant.js"></script>
+import { Canvas, useFrame } from "@react-three/fiber";
+import { yrGL } from './cloth/lib/yrGL';
+import { vs_constant, fs_constant } from './cloth/lib/constant';
+import { yrTimer } from './cloth/lib/yrTimer';
+import { yrInput } from './cloth/lib/yrInput';
+import { yrCamera } from './cloth/lib/yrCamera';
+
+interface State {
+  gl: yrGL;
+  /// 布（後で初期化する）
+  cloth: any;
+  /// 布の大きさに対するスケーリング（ベースのサイズは2*2）
+  scale: number;
+  /// 累積時間
+  ms_acc: number;
+  /// 更新処理の余剰時間（次フレームに持ち越す分）
+  ms_surplus: number;
+};
+
+function Render() {
+  const [state, setState] = React.useState<State>(null);
+  useFrame(({ gl, clock }, delta) => {
+    const GL = gl.getContext();
+
+    if (!state) {
+      // initialize;
+
+      // GL関係のインスタンスを生成
+      const y = new yrGL(gl.getContext() as WebGL2RenderingContext);									// レンダラ―
+      const material_constant = y.createMaterial(vs_constant, fs_constant);	// マテリアル
+
+      // タイマー
+      const timer = new yrTimer();
+
+      // 入力
+      const input = new yrInput(gl.domElement);
+
+      // カメラ
+      const camera = new yrCamera();
+      camera._pos[0] = 1.25;
+      camera._pos[1] = 0.0;
+      camera._pos[2] = 5.5;
+      camera._fov_y = 32.5 * Math.PI / 180.0;	// 画角調整
+
+      setState({
+        gl: y,
+        cloth: null,
+        scale: 1.0,
+        ms_acc: 0,
+        ms_surplus: 0,
+      });
+    }
+    else {
+      // render
+
+      const s = (Math.sin(clock.getElapsedTime()) + 1) / 2.0;
+      GL.clearColor(0.0, 0.0, s, 1);
+      GL.clear(GL.COLOR_BUFFER_BIT);
+    }
+
+    GL.flush();
+  }, 1)
+
+  return <></>
+}
+
 
 export function ClothSimulation() {
 
@@ -16,10 +74,11 @@ export function ClothSimulation() {
     <a href="https://qiita.com/yunta_robo/items/0b468b65f3412554400a"
     >Qiita投稿</a
     >
-    <h2></h2>
-    <canvas id="canvas_main" width="512" height="512"
-    >canvasに対応していません。</canvas
-    >
+    <div style={{ width: "512px", height: "512px" }} >
+      <Canvas >
+        <Render />
+      </Canvas>
+    </div>
     <br />
     <br />
     <form name="form_ui" style={{ fontSize: "14px" }}>

@@ -16,8 +16,7 @@ var __MAX_VERTEX_TEXTURE_IMAGE_UNITS__ = 0;	//
 // -------------------------------------------------------------------------------------------
 // レンダラー
 class yrGLRenderer {
-  constructor(gl) {
-    this._gl = gl;
+  constructor(public readonly _gl: WebGL2RenderingContext) {
 
     /* ↓とりあえずの初期設定、変更はご自由に */
 
@@ -536,13 +535,8 @@ class yrGLFrameBuffer {
 
 // -------------------------------------------------------------------------------------------
 // WebGLラッパー
-class yrGL {
-  constructor(canvas_id) {
-    // canvasエレメント
-    this._canvas = document.getElementById(canvas_id);
-
-    // WebGLコンテキスト
-    this._gl = this._canvas.getContext("webgl") || this._canvas.getContext("experimental-webgl");
+export class yrGL {
+  constructor(public readonly _gl: WebGL2RenderingContext) {
     if (!this._gl) {
       // 失敗
       yrUtil.message("何らかの理由でWebGLを使用することができません。\n他のブラウザをお試しください。", true);
@@ -565,13 +559,8 @@ class yrGL {
     __MAX_VERTEX_TEXTURE_IMAGE_UNITS__ = this._gl.getParameter(this._gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS);
   }
 
-  // レンダラーのインスタンスを生成する
-  createRenderer() {
-    return new yrGLRenderer(this._gl);
-  }
-
   // マテリアルのインスタンスを生成する
-  createMaterial(vs_str, fs_str) {
+  createMaterial(vs_str: string, fs_str: string) {
     return new yrGLMaterial(this._gl, vs_str, fs_str);
   }
 
