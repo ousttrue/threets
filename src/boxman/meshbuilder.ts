@@ -274,6 +274,15 @@ export class MeshBuilder {
     }
   }
 
+  getBone(name: string): THREE.Bone {
+    for (const bone of this.bones) {
+      if (bone.name == name) {
+        return bone;
+      }
+    }
+    throw `${name} not found`;
+  }
+
   addQuad(p0: THREE.Vector3, p1: THREE.Vector3, p2: THREE.Vector3, p3: THREE.Vector3) {
     const i = this.positions.length;
     this.positions.push(p0, p1, p2, p3);
@@ -428,6 +437,43 @@ export class MeshBuilder {
     g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(skinWeights, 4));
 
     return g;
+  }
+
+  appendSpring(head: THREE.Bone, n: number): THREE.Object3D[][] {
+    const tail = head.children[0];
+
+    // objects
+    const geometry = new THREE.SphereGeometry(0.03, 32, 16);
+    const material = new THREE.MeshStandardMaterial({ color: 0xbbbbbb });
+
+    // console.log(head, tail, n);
+    const springs: THREE.Object3D[][] = [];
+    const delta = tail.position.clone();
+    delta.multiplyScalar(1 / n);
+    for (let i = 0; i < n; ++i) {
+      let parent: THREE.Object3D = head;
+      const joints: THREE.Object3D[] = []
+      springs.push(joints)
+      for (let j = 0; j < 3; ++j) {
+        const joint = new THREE.Mesh(geometry, material);
+        joint.name = `joiint[${i}-${j}]`;
+        if (j == 0) {
+          const d = delta.clone();
+          d.multiplyScalar(i);
+          joint.position.set(...d.toArray());
+        }
+        else {
+          joint.position.set(
+            0,
+            - 0.15,
+            0.0);
+        }
+        parent.add(joint);
+        parent = joint;
+        joints.push(joint);
+      }
+    }
+    return springs;
   }
 
   buildSkeleton(color: number): THREE.Object3D {

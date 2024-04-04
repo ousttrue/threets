@@ -1,30 +1,27 @@
 import React from "react";
 import * as THREE from "three";
-import { useThree } from "@react-three/fiber";
+import { useThree, useFrame } from "@react-three/fiber";
 import { OrbitControls, Grid } from "@react-three/drei";
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
-const roots = [];
+const roots: THREE.Object3D[] = [];
 
 export function World({
   root,
+  onFrame,
   selected,
   setInvalidate,
 }: {
   root?: THREE.Object3D,
+  onFrame: Function,
   selected?: THREE.Object3D,
   setInvalidate: Function,
 }) {
-  const { scene, camera, gl } = useThree();
+  useFrame(({ clock }, delta) => {
+    onFrame(clock, delta);
+  });
 
-  // scene.clear();
-  // console.log(root);
-  for (const root of roots) {
-    scene.remove(root);
-  }
-  roots.splice(0);
-  scene.add(root);
-  roots.push(root);
+  const { scene, camera, gl } = useThree();
 
   const orbitControlsRef = React.useRef(null);
   const [transControls, setTransControls] = React.useState(null);
@@ -76,6 +73,7 @@ export function World({
       <OrbitControls ref={orbitControlsRef} makeDefault />
       <Grid cellColor="white" args={[10, 10]} />
       <axesHelper />
+      {root ? <primitive object={root} /> : ""}
     </>
   );
 }

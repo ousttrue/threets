@@ -9,6 +9,7 @@ import { World } from './boxman/world';
 import { SceneTree } from './boxman/tree';
 import { Inspector } from './boxman/inspector';
 import { MeshBuilder, values, hierarchy } from './boxman/meshbuilder';
+import * as VrmSpringBone from '@pixiv/three-vrm-springbone';
 
 
 const darkGreen = 0x009900;
@@ -18,8 +19,14 @@ const darkRed = 0x990000;
 const fingerSize: [number, number] = [0.1, 0.1];
 
 
+interface Model {
+  root: THREE.Object3D;
+  onFrame: (clock: THREE.Clock, delta: number) => void;
+};
+
+
 export function BoxMan() {
-  const [root, setRoot] = React.useState<THREE.Object3D>(null);
+  const [model, setModel] = React.useState<Model>(null);
   const [selected, setSelected] = React.useState<THREE.Object3D>(null);
   const [invalidate, setInvalidate] = React.useState(1);
 
@@ -37,10 +44,47 @@ export function BoxMan() {
 
     const builder = new MeshBuilder(1.6, values);
     /*const hips =*/ builder.traverse(hierarchy);
+    const springs: THREE.Object3D[][] = [];
+    springs.push(...builder.appendSpring(builder.getBone('leftLowerArm'), 3));
+    springs.push(...builder.appendSpring(builder.getBone('rightLowerArm'), 3));
 
     const root = builder.buildSkeleton(darkGreen);
 
-    setRoot(root);
+    // spring bone
+    const springBoneManager = new VrmSpringBone.VRMSpringBoneManager();
+
+    for (let i = 0; i < springs.length; i++) {
+      const joints = springs[i];
+      for (let j = 0; j < joints.length - 1; ++j) {
+        const springBone = new VrmSpringBone.VRMSpringBoneJoint(joints[j], joints[j + 1], { hitRadius: 0.01 });
+        // springBone.colliderGroups = [{ colliders }];
+        springBoneManager.addJoint(springBone);
+      }
+    }
+
+    // helpers
+    springBoneManager.joints.forEach((bone) => {
+      const helper = new VrmSpringBone.VRMSpringBoneJointHelper(bone);
+      helper.name = `springbone:${helper.id}`
+      root.add(helper);
+    });
+
+    // init spring bones
+    springBoneManager.setInitState();
+
+    // animate
+    let shouldReset = true; // reset in the very first frame
+
+    setModel({
+      root,
+      onFrame: (clock, delta) => {
+        if (shouldReset) {
+          shouldReset = false;
+          springBoneManager.reset();
+        }
+        springBoneManager.update(delta);
+      },
+    });
 
   }, []);
 
@@ -55,7 +99,7 @@ export function BoxMan() {
         <div id="x" style={{ 'height': '50px' }}>
         </div>
         <div>
-          <SceneTree root={root} setSelected={setSelected} />
+          <SceneTree {...model} setSelected={setSelected} />
         </div>
       </div>
 
@@ -65,7 +109,7 @@ export function BoxMan() {
         </div>
         <Canvas>
           <Stats />
-          <World root={root} selected={selected} setInvalidate={setInvalidate} />
+          <World {...model} selected={selected} setInvalidate={setInvalidate} />
         </Canvas>
       </div>
 
