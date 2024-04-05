@@ -1,7 +1,7 @@
 import React from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import * as THREE from 'three';
-import { initInstanceObjects } from './cloth_pbd/InstanceInit.js';
+import { initInstanceObjects } from './cloth_pbd/InstanceInit';
 import { Stats, Box, Grid, OrbitControls, TransformControls } from "@react-three/drei";
 
 
