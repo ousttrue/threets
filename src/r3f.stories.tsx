@@ -2,7 +2,7 @@ import type { Story } from "@ladle/react";
 import React from "react";
 import { Canvas } from "@react-three/fiber";
 import { CameraWorld, FaceWorld } from "./libs/world";
-import { Box, Grid, OrbitControls, TransformControls } from "@react-three/drei";
+import { Stats, Box, Grid, OrbitControls, TransformControls } from "@react-three/drei";
 
 export const BoxStory = () => (
   <Canvas>
@@ -38,6 +38,7 @@ export const GridCameraLightStory: Story = () => (
     <directionalLight position={[10, 10, 5]} />
     <OrbitControls makeDefault />
     <Grid cellColor="white" args={[10, 10]} />
+    <Stats/>
     <Box position={[0, 0.5, 0]}>
       <meshStandardMaterial />
     </Box>
