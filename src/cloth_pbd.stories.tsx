@@ -2,6 +2,8 @@ import React from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import * as THREE from 'three';
 import { initInstanceObjects } from './cloth_pbd/InstanceInit';
+import { InstancePoint } from './cloth_pbd/InstancePoint';
+import { Stick } from './cloth_pbd/stick';
 import { Stats, Box, Grid, OrbitControls, TransformControls } from "@react-three/drei";
 
 
@@ -15,9 +17,9 @@ import ClothMetallic from '/cloth-texture/fabric_85_metallic-1K.png';
 
 
 class Renderer {
-  instancePoints: any;
-  sticks: any;
-  order: any;
+  instancePoints: InstancePoint;
+  sticks: Stick[];
+  order: number[];
   shapeGeometry: THREE.BufferGeometry;
   shape: THREE.Mesh;
 
@@ -27,9 +29,9 @@ class Renderer {
     color: string,
     public readonly scale: number,
   ) {
-    var obj = initInstanceObjects(width, height);
-    this.instancePoints = obj[0];
-    this.sticks = obj[1];
+    const { instancePoints, sticks } = initInstanceObjects(width, height);
+    this.instancePoints = instancePoints;
+    this.sticks = sticks;
     this.order = []
 
     // number of squares
@@ -115,7 +117,7 @@ class Renderer {
     this.instancePoints.updatePoints(delta);
     for (let i = 0; i < 3; i++) {
       this.sticks.forEach(function(stick) {
-        stick.updateStick(delta);
+        stick.updateStick();
       });
     }
 
@@ -166,7 +168,7 @@ export function ClothSimulationPBD() {
   return (<div style={{ width: "100%", height: "100%" }}>
     <div style={{ position: "absolute", display: "flex", gap: "3vw", marginTop: "6vh", marginLeft: "2vw", "zIndex": 1 }} >
       <div>
-      <a href="https://github.com/RobertoLovece/Cloth">github</a>
+        <a href="https://github.com/RobertoLovece/Cloth">github</a>
       </div>
     </div>
 
