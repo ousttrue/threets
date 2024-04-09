@@ -1,8 +1,9 @@
 import type { Story } from "@ladle/react";
 import React from "react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { CameraWorld, FaceWorld } from "./libs/world";
 import { Stats, Box, Grid, OrbitControls, TransformControls } from "@react-three/drei";
+import * as THREE from 'three';
 
 export const BoxStory = () => (
   <Canvas>
@@ -38,7 +39,7 @@ export const GridCameraLightStory: Story = () => (
     <directionalLight position={[10, 10, 5]} />
     <OrbitControls makeDefault />
     <Grid cellColor="white" args={[10, 10]} />
-    <Stats/>
+    <Stats />
     <Box position={[0, 0.5, 0]}>
       <meshStandardMaterial />
     </Box>
@@ -63,3 +64,49 @@ export const TransformControlsStory = () => {
     </Canvas>
   );
 };
+
+interface Model {
+  root: THREE.Object3D;
+  onFrame: (clock: THREE.Clock, delta: number) => void;
+};
+
+function Render({ model }: { model?: Model }) {
+  useFrame(({ clock }, delta) => {
+    model?.onFrame(clock, delta);
+  });
+  return (<>
+    <color attach="background" args={[0, 0, 0]} />
+    <ambientLight intensity={0.8} />
+    <pointLight intensity={1} position={[0, 6, 0]} />
+    <directionalLight position={[10, 10, 5]} />
+    <OrbitControls makeDefault />
+    <Grid cellColor="white" args={[10, 10]} />
+    <axesHelper />
+    <Stats />
+    {model ? <primitive object={model.root} /> : ""}
+  </>
+  );
+}
+
+export function ScriptingScene() {
+  const [model, setModel] = React.useState<Model>(null);
+
+  React.useEffect(() => {
+    // create scene
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    const cube = new THREE.Mesh(geometry, material);
+
+    setModel({
+      root: cube,
+      onFrame: (clock: THREE.Clock, delta: number) => {
+        cube.position.set(Math.sin(clock.elapsedTime), 0, 0);
+      }
+    });
+
+  }, []);
+
+  return (<Canvas shadows>
+    <Render model={model} />
+  </Canvas>);
+}
