@@ -11,7 +11,7 @@ function cube(size: number): THREE.Mesh {
   return cube;
 }
 
-class Model {
+abstract class BaseModel {
   _root = new THREE.Group();
   _transform: TransformControls;
   _joints: THREE.Object3D[] = [];
@@ -55,14 +55,7 @@ class Model {
     return this._root;
   }
 
-  onFrame(domElement: HTMLElement,
-    clock: THREE.Clock,
-    scene: THREE.Scene,
-    camera: THREE.Camera,
-    invalidate: Function,
-    orbitControls?: any,
-  ) {
-
+  lazyInitTransform(camera: THREE.Camera, domElement: HTMLElement, orbitControls: any) {
     if (!this._transform) {
       // lazy initialization
       this._transform = new TransformControls(camera, domElement);
@@ -79,6 +72,99 @@ class Model {
       });
       this._root.add(this._transform);
     }
+  }
+
+  abstract onFrame(
+    clock: THREE.Clock,
+    delta: number,
+    scene: THREE.Scene
+  ): void;
+}
+
+function Render({ model }: { model?: BaseModel }) {
+  const transformRef = React.useRef();
+  const { invalidate } = useThree();
+  useFrame(({ gl, camera, clock, scene }, delta) => {
+    if (model) {
+      model.lazyInitTransform(camera, gl.domElement, transformRef.current);
+      model.onFrame(clock, delta, scene);
+      invalidate();
+    }
+
+  });
+
+  return (<>
+    <color attach="background" args={[0, 0, 0]} />
+    <ambientLight intensity={0.8} />
+    <pointLight intensity={1} position={[0, 6, 0]} />
+    <directionalLight position={[10, 10, 5]} />
+    <OrbitControls ref={transformRef} makeDefault />
+    <Grid cellColor="white" args={[10, 10]} />
+    <axesHelper />
+    <Stats />
+    {model ? <primitive object={model.root} /> : ""}
+  </>
+  );
+}
+
+//
+// Velocity
+//
+class VelocityModel extends BaseModel {
+
+  onFrame(
+    clock: THREE.Clock,
+    delta: number,
+    scene: THREE.Scene
+  ) {
+    // update current & detach parent
+    for (let i = 1; i < this._joints.length; ++i) {
+      this._joints[i].getWorldPosition(this._currentPositions[i]);
+      scene.attach(this._joints[i]);
+    }
+
+    // verlet
+    for (let i = 1; i < this._joints.length; ++i) {
+      const joint = this._joints[i];
+
+      const current = this._currentPositions[i];
+      const prev = this._prevPositions[i];
+
+      const velocity = new THREE.Vector3();
+      velocity.subVectors(current, prev);
+
+      prev.copy(current);
+      joint.position.addVectors(current, velocity);
+    }
+
+    // restore parent
+    for (let i = 1; i < this._joints.length; ++i) {
+      this._joints[i].getWorldPosition(this._currentPositions[i]);
+      this._joints[i - 1].attach(this._joints[i]);
+    }
+  }
+}
+
+export function Velocity() {
+  const [model, setModel] = React.useState<VelocityModel>(null);
+  React.useEffect(() => {
+    setModel(new VelocityModel());
+  }, []);
+
+  return (<Canvas shadows>
+    <Render model={model} />
+  </Canvas>);
+}
+
+//
+// Length Constraint
+//
+class ConstraintModel extends BaseModel {
+  onFrame(
+    clock: THREE.Clock,
+    delta: number,
+    scene: THREE.Scene
+  ) {
 
     // update current & detach parent
     for (let i = 1; i < this._joints.length; ++i) {
@@ -100,57 +186,111 @@ class Model {
       joint.position.addVectors(current, velocity);
     }
 
-    // constraint
-
     // restore parent
     for (let i = 1; i < this._joints.length; ++i) {
       this._joints[i].getWorldPosition(this._currentPositions[i]);
       this._joints[i - 1].attach(this._joints[i]);
     }
 
-    // for (let i = 0; i < this._joints.length; ++i) {
-    //   this._joints[i].getWorldPosition(
-    //     this._prevPositions[i]);
-    // }
-
-    invalidate();
+    // constraint
+    for (let i = 1; i < this._joints.length; ++i) {
+      const joint = this._joints[i];
+      const len = joint.position.length();
+      joint.position.multiplyScalar(0.2 / len);
+    }
   }
 }
 
-
-function Render({ model }: { model?: Model }) {
-  const transformRef = React.useRef();
-  const { invalidate } = useThree();
-  useFrame(({ gl, camera, clock, scene }, delta) => {
-    model?.onFrame(gl.domElement,
-      clock,
-      scene,
-      camera,
-      invalidate,
-      transformRef.current);
-  });
-
-  return (<>
-    <color attach="background" args={[0, 0, 0]} />
-    <ambientLight intensity={0.8} />
-    <pointLight intensity={1} position={[0, 6, 0]} />
-    <directionalLight position={[10, 10, 5]} />
-    <OrbitControls ref={transformRef} makeDefault />
-    <Grid cellColor="white" args={[10, 10]} />
-    <axesHelper />
-    <Stats />
-    {model ? <primitive object={model.root} /> : ""}
-  </>
-  );
-}
-
-export function DynamicParticle() {
-  const [model, setModel] = React.useState<Model>(null);
+export function Constraint() {
+  const [model, setModel] = React.useState<ConstraintModel>(null);
   React.useEffect(() => {
-    setModel(new Model());
+    setModel(new ConstraintModel());
   }, []);
 
   return (<Canvas shadows>
     <Render model={model} />
   </Canvas>);
 }
+
+//
+// Recursive
+//
+class RecursiveModel extends BaseModel {
+  onFrame(
+    clock: THREE.Clock,
+    delta: number,
+    scene: THREE.Scene
+  ) {
+    for (let i = 1; i < this._joints.length; ++i) {
+      // this._joints[i].getWorldPosition(this._currentPositions[i]);
+
+      const joint = this._joints[i];
+
+      const current = new THREE.Vector3();;
+      joint.getWorldPosition(current);
+      const prev = this._prevPositions[i];
+
+      const velocity = new THREE.Vector3();
+      velocity.subVectors(current, prev);
+
+      prev.copy(current);
+      joint.position.addVectors(current, velocity);
+
+      const len = joint.position.length();
+      joint.position.multiplyScalar(0.2 / len);
+    }
+  }
+}
+
+export function Recursive() {
+  const [model, setModel] = React.useState<RecursiveModel>(null);
+  React.useEffect(() => {
+    setModel(new RecursiveModel());
+  }, []);
+
+  return (<Canvas shadows>
+    <Render model={model} />
+  </Canvas>);
+}
+
+//
+// SpringBone
+//
+class SpringBoneModel extends BaseModel {
+  onFrame(
+    clock: THREE.Clock,
+    delta: number,
+    scene: THREE.Scene
+  ) {
+    for (let i = 1; i < this._joints.length; ++i) {
+      // this._joints[i].getWorldPosition(this._currentPositions[i]);
+
+      const joint = this._joints[i];
+
+      const current = new THREE.Vector3();;
+      joint.getWorldPosition(current);
+      const prev = this._prevPositions[i];
+
+      const velocity = new THREE.Vector3();
+      velocity.subVectors(current, prev);
+
+      prev.copy(current);
+      joint.position.addVectors(current, velocity);
+
+      const len = joint.position.length();
+      joint.position.multiplyScalar(0.2 / len);
+    }
+  }
+}
+
+export function SpringBone() {
+  const [model, setModel] = React.useState<SpringBoneModel>(null);
+  React.useEffect(() => {
+    setModel(new SpringBoneModel());
+  }, []);
+
+  return (<Canvas shadows>
+    <Render model={model} />
+  </Canvas>);
+}
+
