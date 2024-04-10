@@ -11,6 +11,13 @@ function cube(size: number): THREE.Mesh {
   return cube;
 }
 
+function setWorld(scene: THREE.Scene, obj: THREE.Object3D, src: THREE.Vector3) {
+  const parent = obj.parent;
+  scene.attach(obj);
+  obj.position.set(src.x, src.y, src.z);
+  parent.attach(obj);
+}
+
 abstract class BaseModel {
   _root = new THREE.Group();
   _transform: TransformControls;
@@ -87,8 +94,10 @@ function Render({ model }: { model?: BaseModel }) {
   useFrame(({ gl, camera, clock, scene }, delta) => {
     if (model) {
       model.lazyInitTransform(camera, gl.domElement, transformRef.current);
-      model.onFrame(clock, delta, scene);
-      invalidate();
+      if (delta > 0) {
+        model.onFrame(clock, delta, scene);
+        invalidate();
+      }
     }
 
   });
@@ -256,29 +265,51 @@ export function Recursive() {
 //
 // SpringBone
 //
+// https://ousttrue.github.io/yuremono/docs/springbone/rocketjump/
 class SpringBoneModel extends BaseModel {
+  constructor(
+    public readonly stiffnessForce: number = 0.2,
+    public readonly dragForce: number = 0.1,
+  ) {
+    super()
+  }
+
   onFrame(
     clock: THREE.Clock,
     delta: number,
     scene: THREE.Scene
   ) {
+    const sqrDt = delta * delta;
+
     for (let i = 1; i < this._joints.length; ++i) {
-      // this._joints[i].getWorldPosition(this._currentPositions[i]);
-
       const joint = this._joints[i];
-
-      const current = new THREE.Vector3();;
-      joint.getWorldPosition(current);
-      const prev = this._prevPositions[i];
-
+      joint.getWorldPosition(this._currentPositions[i]);
+      const currTipPos = this._currentPositions[i];
+      const prevTipPos = this._prevPositions[i];
       const velocity = new THREE.Vector3();
-      velocity.subVectors(current, prev);
+      velocity.subVectors(currTipPos, prevTipPos);
 
-      prev.copy(current);
-      joint.position.addVectors(current, velocity);
+      const dragVelocity = new THREE.Vector3();
+      velocity.subVectors(prevTipPos, currTipPos);
 
+      //stiffness
+      const force = new THREE.Vector3(0, -1, 0).multiplyScalar(
+        this.stiffnessForce / sqrDt);
+      force.add(dragVelocity.multiplyScalar(this.dragForce / sqrDt));
+
+      const newPosition = new THREE.Vector3();
+      newPosition.add(currTipPos);
+      newPosition.add(velocity);
+      newPosition.add(force.multiplyScalar(sqrDt));
+
+      prevTipPos.copy(currTipPos);
+      setWorld(scene, joint, newPosition);
+
+      // constraint
       const len = joint.position.length();
-      joint.position.multiplyScalar(0.2 / len);
+      if (len > 0) {
+        joint.position.multiplyScalar(0.2 / len);
+      }
     }
   }
 }
@@ -293,4 +324,3 @@ export function SpringBone() {
     <Render model={model} />
   </Canvas>);
 }
-
