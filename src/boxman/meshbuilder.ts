@@ -111,6 +111,16 @@ export const hierarchy = new HumanBone('hips', BODY_AXIS, [
       new HumanBone('rightFoot', LEG_AXIS, [])])]),
 ]);
 
+const YELLOW = new THREE.Color(0xffff66);
+const COLOR_MAP: { [key: string]: THREE.Color } = {
+  hips: YELLOW,
+  spine: YELLOW,
+  chest: YELLOW,
+  neck: YELLOW,
+  head: YELLOW,
+  face: YELLOW,
+};
+
 // 6頭身
 //
 //  +-+     _head
@@ -146,7 +156,7 @@ class BoneSize {
 
   scale(): THREE.Matrix4 {
     let { x, z } = this.size;
-    if (z == undefined) {
+    if (z === undefined) {
       z = x;
     }
     const m = new THREE.Matrix4();
@@ -155,9 +165,12 @@ class BoneSize {
   }
 
   multiply(s: number): BoneSize {
-    const size = this.size;
+    const size = { ...this.size };
     size.x *= s;
-    if (size.z) {
+    if (size.z === undefined) {
+      size.z = size.x;
+    }
+    else {
       size.z *= s;
     }
     let offset = this.offset;
@@ -258,6 +271,7 @@ export class MeshBuilder {
   // per cube
   skinIndices: number[] = [];
   bones: THREE.Bone[] = [];
+  colors: THREE.Color[] = [];
 
   prefix: string = '';
 
@@ -304,7 +318,7 @@ export class MeshBuilder {
   //
   // add 24 vertices(vertex normal)
   // add 12 triangles
-  addCube(name: string, m: THREE.Matrix4) {
+  addCube(name: string, m: THREE.Matrix4, c: THREE.Color) {
     const boneIndex = this.bones.map(o => o.name).indexOf(name);
     console.assert(boneIndex != -1, 'boneIndex', name);
     this.skinIndices.push(boneIndex);
@@ -332,6 +346,8 @@ export class MeshBuilder {
     for (const [i0, i1, i2, i3] of quads) {
       this.addQuad(positions[i0], positions[i1], positions[i2], positions[i3]);
     }
+
+    this.colors.push(c)
   }
 
   getSize(name: string): BoneSize {
@@ -379,7 +395,7 @@ export class MeshBuilder {
     t_bone.applyMatrix4(m);
 
     m.multiply(s);
-    this.addCube(bone.name, m);
+    this.addCube(bone.name, m, COLOR_MAP[bone.name] ?? new THREE.Color(0xffffff));
 
     // page
     // const page = getTab(bone.name);
@@ -430,6 +446,16 @@ export class MeshBuilder {
     const normal = new Float32Array(this.normals.map(v => [v.toArray(), v.toArray(), v.toArray(), v.toArray()].flat()).flat());
     g.setAttribute('normal', new THREE.BufferAttribute(normal, 3));
 
+    const color = new Float32Array(this.colors.map(c => [
+      c.r, c.g, c.b, c.r, c.g, c.b, c.r, c.g, c.b, c.r, c.g, c.b,
+      c.r, c.g, c.b, c.r, c.g, c.b, c.r, c.g, c.b, c.r, c.g, c.b,
+      c.r, c.g, c.b, c.r, c.g, c.b, c.r, c.g, c.b, c.r, c.g, c.b,
+      c.r, c.g, c.b, c.r, c.g, c.b, c.r, c.g, c.b, c.r, c.g, c.b,
+      c.r, c.g, c.b, c.r, c.g, c.b, c.r, c.g, c.b, c.r, c.g, c.b,
+      c.r, c.g, c.b, c.r, c.g, c.b, c.r, c.g, c.b, c.r, c.g, c.b,
+    ]).flat());
+    g.setAttribute("color", new THREE.BufferAttribute(color, 3));
+
     // skinning
     const skinIndices = new Uint16Array(this.positions.map((_, i) => [i / 24, 0, 0, 0]).flat());
     const skinWeights = new Float32Array(this.positions.map(_ => [1, 0, 0, 0]).flat());
@@ -478,7 +504,7 @@ export class MeshBuilder {
 
   buildSkeleton(color: number): THREE.Object3D {
     // mesh
-    const material = new THREE.MeshStandardMaterial({ color });
+    const material = new THREE.MeshStandardMaterial({ vertexColors: true });
     const mesh = new THREE.SkinnedMesh(this.buildMesh(), material);
     mesh.name = 'mesh'
 

@@ -2,8 +2,7 @@ import type { Story } from "@ladle/react";
 import React from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { CameraWorld, FaceWorld } from "./libs/world";
-import { Stats, Box, Grid, OrbitControls, TransformControls } from "@react-three/drei";
-import * as THREE from 'three';
+import { Stats, Box, Grid, OrbitControls, TransformControls, useGLTF } from "@react-three/drei";
 
 export const BoxStory = () => (
   <Canvas>
@@ -65,3 +64,15 @@ export const TransformControlsStory = () => {
   );
 };
 
+export function UseGltf(props) {
+  const { nodes, materials } = useGLTF('/suzanne.gltf')
+  return (
+    <group {...props} dispose={null}>
+      <mesh
+        castShadow
+        receiveShadow
+        position={[0, 0.189, -0.043]}
+      />
+    </group>
+  )
+}
